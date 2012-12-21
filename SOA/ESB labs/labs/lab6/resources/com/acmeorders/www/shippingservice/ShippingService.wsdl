@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions name="ShippingService"
+	targetNamespace="http://www.acmeOrders.com/ShippingService"
+	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:tns="http://www.acmeOrders.com/ShippingService"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<wsdl:types>
+		<xsd:schema targetNamespace="http://www.acmeOrders.com/ShippingService"
+			xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+			<xsd:element name="shipPartResponse">
+				<xsd:complexType>
+					<xsd:sequence>
+						<xsd:element name="status" type="xsd:string"></xsd:element>
+						<xsd:element name="shipDate" type="xsd:string"></xsd:element>
+						<xsd:element name="shipTime" type="xsd:string"></xsd:element>
+						<xsd:element name="partNo" type="xsd:string"></xsd:element>
+						<xsd:element name="partQuantity" type="xsd:int"></xsd:element>
+					</xsd:sequence>
+				</xsd:complexType>
+			</xsd:element>
+			<xsd:element name="shipPartRequest">
+				<xsd:complexType>
+					<xsd:sequence>
+						<xsd:element name="partNo" type="xsd:string"></xsd:element>
+						<xsd:element name="partQuantity" type="xsd:int"></xsd:element>
+						<xsd:element name="personName">
+							<xsd:complexType>
+								<xsd:sequence>
+									<xsd:element name="firstName" type="xsd:string">
+									</xsd:element>
+									<xsd:element name="lastName" type="xsd:string">
+									</xsd:element>
+								</xsd:sequence>
+							</xsd:complexType>
+						</xsd:element>
+						<xsd:element name="address">
+							<xsd:complexType>
+								<xsd:sequence>
+									<xsd:element name="street" type="xsd:string">
+									</xsd:element>
+									<xsd:element name="city" type="xsd:string">
+									</xsd:element>
+									<xsd:element name="zipCode" type="xsd:string">
+									</xsd:element>
+								</xsd:sequence>
+							</xsd:complexType>
+						</xsd:element>
+					</xsd:sequence>
+				</xsd:complexType>
+			</xsd:element>
+		</xsd:schema>
+	</wsdl:types>
+	<wsdl:message name="shipPartResponse">
+		<wsdl:part element="tns:shipPartResponse" name="shipPartResponse" />
+	</wsdl:message>
+	<wsdl:message name="shipPartRequest">
+		<wsdl:part element="tns:shipPartRequest" name="shipPartRequest" />
+	</wsdl:message>
+	<wsdl:portType name="ShippingService">
+		<wsdl:operation name="shipPart">
+			<wsdl:input message="tns:shipPartRequest" />
+			<wsdl:output message="tns:shipPartResponse" />
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="ShippingServiceSOAP" type="tns:ShippingService">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+		<wsdl:operation name="shipPart">
+			<soap:operation soapAction="http://tempuri.org/ShippingService/NewOperation" />
+			<wsdl:input>
+				<soap:body use="literal" />
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" />
+			</wsdl:output>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="ShippingService">
+		<wsdl:port binding="tns:ShippingServiceSOAP" name="ShippingServiceSOAP">
+			<soap:address location="http://localhost:7080/acmeOrders/ShippingService" />
+		</wsdl:port>
+	</wsdl:service>
+</wsdl:definitions>

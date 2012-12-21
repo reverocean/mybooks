@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:tns="http://www.acmeOrders.com/OrderService"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" name="OrderService"
+	targetNamespace="http://www.acmeOrders.com/OrderService">
+	<wsdl:types>
+		<xsd:schema targetNamespace="http://www.acmeOrders.com/OrderService" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://www.acmeOrders.com/OrderService">
+			<xsd:element name="submitPOResponse">
+				<xsd:complexType>
+					<xsd:sequence>
+						<xsd:element name="orderStatus" type="xsd:string"></xsd:element>
+						<xsd:element name="orderAmt" type="xsd:int"></xsd:element>
+						<xsd:element name="partNo" type="xsd:string"></xsd:element>
+						<xsd:element name="partQuantity" type="xsd:int"></xsd:element>
+					</xsd:sequence>
+				</xsd:complexType>
+			</xsd:element>
+			<xsd:element name="submitPORequest">
+				<xsd:complexType>
+					<xsd:sequence>
+						<xsd:element name="partNo" type="xsd:string"></xsd:element>
+						<xsd:element name="partQuantity" type="xsd:int"></xsd:element>
+						<xsd:element name="personName">							<xsd:complexType>								<xsd:sequence>									<xsd:element name="firstName" type="xsd:string">
+									</xsd:element>
+									<xsd:element name="lastName" type="xsd:string">
+									</xsd:element>
+								</xsd:sequence>
+							</xsd:complexType>
+						</xsd:element>
+						<xsd:element name="address">							<xsd:complexType>								<xsd:sequence>									<xsd:element name="street" type="xsd:string">
+									</xsd:element>
+									<xsd:element name="city" type="xsd:string">
+									</xsd:element>
+									<xsd:element name="zipCode" type="xsd:string">
+									</xsd:element>
+								</xsd:sequence>
+							</xsd:complexType>
+						</xsd:element>
+					</xsd:sequence>
+				</xsd:complexType>
+			</xsd:element>
+		</xsd:schema>
+	</wsdl:types>
+	<wsdl:message name="submitPOResponse">
+		<wsdl:part element="tns:submitPOResponse" name="submitPOResponse" />
+	</wsdl:message>
+	<wsdl:message name="submitPORequest">
+		<wsdl:part element="tns:submitPORequest" name="submitPORequest" />
+	</wsdl:message>
+	<wsdl:portType name="OrderService">
+		<wsdl:operation name="submitPO">
+			<wsdl:input message="tns:submitPORequest" />
+			<wsdl:output message="tns:submitPOResponse" />
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="OrderServiceSOAP" type="tns:OrderService">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+		<wsdl:operation name="submitPO">
+			<soap:operation
+				soapAction="http://www.acmeOrders.com/OrderService/NewOperation" />
+			<wsdl:input>
+				<soap:body use="literal" />
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" />
+			</wsdl:output>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="OrderService">
+		<wsdl:port binding="tns:OrderServiceSOAP" name="OrderServiceSOAP">
+			<soap:address location="http://tempuri.org/acmeOrders/ProcessOrder" />
+		</wsdl:port>
+	</wsdl:service>
+</wsdl:definitions>

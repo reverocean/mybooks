@@ -1,0 +1,106 @@
+package com.ibm.mb.customnodes.logging;
+
+import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import org.apache.log4j.Logger;
+import org.apache.log4j.xml.DOMConfigurator;
+
+import com.ibm.broker.plugin.MbElement;
+import com.ibm.broker.plugin.MbException;
+import com.ibm.broker.plugin.MbInputTerminal;
+import com.ibm.broker.plugin.MbMessage;
+import com.ibm.broker.plugin.MbMessageAssembly;
+import com.ibm.broker.plugin.MbNode;
+import com.ibm.broker.plugin.MbNodeInterface;
+import com.ibm.broker.plugin.MbOutputTerminal;
+
+public class Log4jXMLConfigNode extends MbNode implements MbNodeInterface {
+	private String userMessage;
+
+	private String xmlConfigFile;
+
+	private Logger logger;
+
+	public Log4jXMLConfigNode() throws MbException {
+		createInputTerminal("in");
+		createOutputTerminal("out");
+		createOutputTerminal("failure");
+	}
+
+	@Override
+	public void evaluate(MbMessageAssembly inAssembly, MbInputTerminal arg1) throws MbException {
+		MbOutputTerminal out = getOutputTerminal("out");
+		MbMessage inMessage = inAssembly.getMessage();
+		MbMessage outMessage = new MbMessage(inMessage);
+		MbMessageAssembly outAssembly = new MbMessageAssembly(inAssembly, outMessage);
+		initLogger();
+
+		String eg = getExecutionGroup().getName();
+		String flow = getMessageFlow().getName();
+
+        String actThreadName = Thread.currentThread().getName();
+        String threadName = (new StringBuilder(String.valueOf(eg))).append(".").append(flow).toString();
+        Thread.currentThread().setName(threadName);
+		String msg = getUserMessage();
+		MbMessage envMsg = outAssembly.getGlobalEnvironment();
+		MbElement env = envMsg.getRootElement();
+		String envText = env.evaluateXPath("string(Variables/userMessage)").toString();
+		if (envText != null && envText.length() > 0) {
+			msg = envText;
+		}
+		logger.debug(msg);
+		Thread.currentThread().setName(actThreadName);
+		out.propagate(outAssembly);
+		outMessage.clearMessage();
+	}
+
+	private void initLogger() {
+		URL url = getClass().getClassLoader().getResource(getXmlConfigFile());
+		try {
+			if (url == null) {
+				File file = new File(getXmlConfigFile());
+				String urlFilename = file.getAbsolutePath();
+				if ((new File(urlFilename)).exists()) {
+					if (urlFilename.startsWith("/")) {
+						url = new URL((new StringBuilder("file://")).append(urlFilename).toString());
+					} else {
+						url = new URL((new StringBuilder("file:///")).append(urlFilename).toString());
+					}
+				}
+			}
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
+		DOMConfigurator.configureAndWatch(url.getFile(), 60000);
+		this.logger = Logger.getLogger(getClass());
+	}
+
+	public String getUserMessage() {
+		return userMessage;
+	}
+
+	public void setUserMessage(String value) {
+		this.userMessage = value;
+	}
+
+	public static String getNodeName() {
+		return "Log4jXMLConfigNode";
+	}
+
+	/**
+	 * @return the xmlConfigFile
+	 */
+	public String getXmlConfigFile() {
+		return xmlConfigFile;
+	}
+
+	/**
+	 * @param xmlConfigFile the xmlConfigFile to set
+	 */
+	public void setXmlConfigFile(String xmlConfigFile) {
+		this.xmlConfigFile = xmlConfigFile;
+	}
+
+}

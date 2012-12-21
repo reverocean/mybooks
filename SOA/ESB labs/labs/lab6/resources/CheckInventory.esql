@@ -1,0 +1,34 @@
+DECLARE ns NAMESPACE 'http://www.acmeOrders.com/OrderService';
+
+
+CREATE FILTER MODULE CheckInventory
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		
+		DECLARE partNo REFERENCE TO Root.XMLNSC.ns:submitPORequest.partNo;
+		
+		DECLARE partQty INTEGER;
+		DECLARE partQtyAvailable INTEGER; 
+		
+		-- extract the cpartNo from message		
+	
+		SET partQty = Root.XMLNSC.ns:submitPORequest.partQuantity;
+				
+		--if the customerID cannot be found in the message then we return unknown
+		 IF (partNo is NULL) THEN
+		 RETURN UNKNOWN;
+		 END IF;	
+			
+		-- search the inventory table for the part No
+		SET partQtyAvailable = THE (SELECT ITEM T.QUANTITY FROM Database.SOAP.INVENTORY AS T WHERE T.PARTNO = partNo); 
+		
+		--if part quantity requested is less than part quantity available return true		
+		IF (partQty  >= partQtyAvailable ) THEN
+			RETURN FALSE;
+		ELSE
+			RETURN TRUE;  
+		END IF; 
+
+	END;
+
+END MODULE;
