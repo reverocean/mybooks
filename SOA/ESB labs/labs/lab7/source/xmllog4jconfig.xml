@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd" >
+<log4j:configuration>
+	<appender name="FILE_DEFAULT" class="org.apache.log4j.FileAppender">
+		<param name="Threshold" value="DEBUG" />
+		<param name="maxFileSize" value="100KB" />
+      <param name="maxBackupIndex" value="5" />
+		<param name="File" value="C:/log4jnode/Log4jTest_default.log" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d{HH:mm:ss,SSS} %-5p [%-10t] %m%n" />
+		</layout>
+	</appender>
+	<logger name="com.ibm.mb.customnodes.logging.Log4jXMLConfigNode">
+		<level value="DEBUG" />
+		<appender-ref ref="FILE_DEFAULT" />
+	</logger>
+</log4j:configuration>

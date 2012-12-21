@@ -1,0 +1,14 @@
+CREATE COMPUTE MODULE AddUserMessage
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		CALL CopyEntireMessage();
+		
+		SET Environment.Variables.userMessage =  CAST(InputRoot.MQMD.MsgId AS CHARACTER) || ': write msg via Log4j';
+		
+		RETURN TRUE;
+	END;
+
+	CREATE PROCEDURE CopyEntireMessage() BEGIN
+		SET OutputRoot = InputRoot;
+	END;
+END MODULE;

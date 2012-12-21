@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="CUSTOMERCOMPLAINT">
+    <xsd:sequence>
+      <xsd:element name="VERSION">
+        <xsd:annotation>
+          <xsd:appinfo source="WMQI_APPINFO">
+            <cwfInclRep messageSetDefaultRep="CWF1">
+              <cwfSimpleRep accessor="readWrite" addrUnit="byte" contentSize="1" offset="0" signFormat="trailing" signed="false" size="1" typeName="MRCWFExternalDecimalRep" width="1"/>
+            </cwfInclRep>
+          </xsd:appinfo>
+        </xsd:annotation>
+        <xsd:simpleType>
+          <xsd:restriction base="xsd:short">
+            <xsd:minInclusive value="0"/>
+            <xsd:maxInclusive value="9"/>
+          </xsd:restriction>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name="CUSTOMER_NAME" type="customercomplaint_customer__name">
+        <xsd:annotation>
+          <xsd:appinfo source="WMQI_APPINFO">
+            <cwfInclRep messageSetDefaultRep="CWF1" skipCountTrailing="0">
+              <cwfAggrRep accessor="readWrite" contentSize="20" offset="1" size="20"/>
+            </cwfInclRep>
+          </xsd:appinfo>
+        </xsd:annotation>
+      </xsd:element>
+      <xsd:element name="CUSTOMER_ADDRESS" type="customercomplaint_customer__address">
+        <xsd:annotation>
+          <xsd:appinfo source="WMQI_APPINFO">
+            <cwfInclRep messageSetDefaultRep="CWF1" skipCountTrailing="0">
+              <cwfAggrRep accessor="readWrite" contentSize="62" offset="21" size="62"/>
+            </cwfInclRep>
+          </xsd:appinfo>
+        </xsd:annotation>
+      </xsd:element>
+      <xsd:element name="COMPLAINT" type="customercomplaint_complaint">
+        <xsd:annotation>
+          <xsd:appinfo source="WMQI_APPINFO">
+            <cwfInclRep messageSetDefaultRep="CWF1" skipCountTrailing="0">
+              <cwfAggrRep accessor="readWrite" contentSize="220" offset="83" size="220"/>
+            </cwfInclRep>
+          </xsd:appinfo>
+        </xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:group name="customercomplaint_customer__name">
+    <xsd:sequence>
+      <xsd:element name="N_FIRST">
+        <xsd:annotation>
+          <xsd:appinfo source="http://www.wsadie.com/appinfo">
+            <initialValue kind="SPACE"/>
+          </xsd:appinfo>
+          <xsd:appinfo source="WMQI_APPINFO">
+            <cwfInclRep messageSetDefaultRep="CWF1">
+              <cwfSimpleRep accessor="readWrite" addrUnit="byte" characterSize="1" contentSize="10" offset="1" paddingCharacter="SPACE" size="10" typeName="MRCWFStringRep" width="10"/>
+            </cwfInclRep>
+          </xsd:appinfo>
+        </xsd:annotation>
+        <xsd:simpleType>
+          <xsd:restriction base="xsd:string">
+            <xsd:maxLength value="10"/>
+          </xsd:restriction>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name="N_LAST">
+        <xsd:annotation>
+          <xsd:appinfo source="http://www.wsadie.com/appinfo">
+            <initialValue kind="SPACE"/>
+          </xsd:appinfo>
+          <xsd:appinfo source="WMQI_APPINFO">
+            <cwfInclRep messageSetDefaultRep="CWF1">
+              <cwfSimpleRep accessor="readWrite" addrUnit="byte" characterSize="1" contentSize="10" offset="11" paddingCharacter="SPACE" size="10" typeName="MRCWFStringRep" width="10"/>
+            </cwfInclRep>
+          </xsd:appinfo>
+        </xsd:annotation>
+        <xsd:simpleType>
+          <xsd:restriction base="xsd:string">
+            <xsd:maxLength value="10"/>
+          </xsd:restriction>
+        </xsd:simpleType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:group>
+  <xsd:complexType name="customercomplaint_customer__name">
+    <xsd:group ref="customercomplaint_customer__name"/>
+  </xsd:complexType>
+  <xsd:group name="customercomplaint_customer__address">
+    <xsd:sequence>
+      <xsd:element maxOccurs="2" minOccurs="2" name="A_LINE">
+        <xsd:annotation>
+          <xsd:appinfo source="http://www.wsadie.com/appinfo">
+            <initialValue kind="SPACE"/>
+          </xsd:appinfo>
+          <xsd:appinfo source="WMQI_APPINFO">
+            <cwfInclRep messageSetDefaultRep="CWF1">
+              <cwfSimpleRep accessor="readWrite" contentSize="40" offset="21" size="40">
+                <ArrayTD_arrayDescr alignmentKind="byte" lowerBound="2" stride="20" strideInBit="false" upperBound="2"/>
+                <MRCWFStringRep_MRCWFSimpleTD addrUnit="byte" characterSize="1" paddingCharacter="SPACE" width="20"/>
+              </cwfSimpleRep>
+            </cwfInclRep>
+          </xsd:appinfo>
+        </xsd:annotation>
+        <xsd:simpleType>
+          <xsd:restriction base="xsd:string">
+            <xsd:maxLength value="20"/>
+          </xsd:restriction>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name="TOWN">
+        <xsd:annotation>
+          <xsd:appinfo source="http://www.wsadie.com/appinfo">
+            <initialValue kind="SPACE"/>
+          </xsd:appinfo>
+          <xsd:appinfo source="WMQI_APPINFO">
+            <cwfInclRep messageSetDefaultRep="CWF1">
+              <cwfSimpleRep accessor="readWrite" addrUnit="byte" characterSize="1" contentSize="10" offset="61" paddingCharacter="SPACE" size="10" typeName="MRCWFStringRep" width="10"/>
+            </cwfInclRep>
+          </xsd:appinfo>
+        </xsd:annotation>
+        <xsd:simpleType>
+          <xsd:restriction base="xsd:string">
+            <xsd:maxLength value="10"/>
+          </xsd:restriction>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name="ZIP">
+        <xsd:annotation>
+          <xsd:appinfo source="http://www.wsadie.com/appinfo">
+            <initialValue kind="SPACE"/>
+          </xsd:appinfo>
+          <xsd:appinfo source="WMQI_APPINFO">
+            <cwfInclRep messageSetDefaultRep="CWF1">
+              <cwfSimpleRep accessor="readWrite" addrUnit="byte" characterSize="1" contentSize="10" offset="71" paddingCharacter="SPACE" size="10" typeName="MRCWFStringRep" width="10"/>
+            </cwfInclRep>
+          </xsd:appinfo>
+        </xsd:annotation>
+        <xsd:simpleType>
+          <xsd:restriction base="xsd:string">
+            <xsd:maxLength value="10"/>
+          </xsd:restriction>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name="COUNTRY">
+        <xsd:annotation>
+          <xsd:appinfo source="http://www.wsadie.com/appinfo">
+            <initialValue kind="SPACE"/>
+          </xsd:appinfo>
+          <xsd:appinfo source="WMQI_APPINFO">
+            <cwfInclRep messageSetDefaultRep="CWF1">
+              <cwfSimpleRep accessor="readWrite" addrUnit="byte" characterSize="1" contentSize="2" offset="81" paddingCharacter="SPACE" size="2" typeName="MRCWFStringRep" width="2"/>
+            </cwfInclRep>
+          </xsd:appinfo>
+        </xsd:annotation>
+        <xsd:simpleType>
+          <xsd:restriction base="xsd:string">
+            <xsd:maxLength value="2"/>
+          </xsd:restriction>
+        </xsd:simpleType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:group>
+  <xsd:complexType name="customercomplaint_customer__address">
+    <xsd:group ref="customercomplaint_customer__address"/>
+  </xsd:complexType>
+  <xsd:group name="customercomplaint_complaint">
+    <xsd:sequence>
+      <xsd:element name="C_TYPE">
+        <xsd:annotation>
+          <xsd:appinfo source="http://www.wsadie.com/appinfo">
+            <initialValue kind="SPACE"/>
+          </xsd:appinfo>
+          <xsd:appinfo source="WMQI_APPINFO">
+            <cwfInclRep messageSetDefaultRep="CWF1">
+              <cwfSimpleRep accessor="readWrite" addrUnit="byte" characterSize="1" contentSize="10" offset="83" paddingCharacter="SPACE" size="10" typeName="MRCWFStringRep" width="10"/>
+            </cwfInclRep>
+          </xsd:appinfo>
+        </xsd:annotation>
+        <xsd:simpleType>
+          <xsd:restriction base="xsd:string">
+            <xsd:maxLength value="10"/>
+          </xsd:restriction>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name="C_REF">
+        <xsd:annotation>
+          <xsd:appinfo source="http://www.wsadie.com/appinfo">
+            <initialValue kind="SPACE"/>
+          </xsd:appinfo>
+          <xsd:appinfo source="WMQI_APPINFO">
+            <cwfInclRep messageSetDefaultRep="CWF1">
+              <cwfSimpleRep accessor="readWrite" addrUnit="byte" characterSize="1" contentSize="10" offset="93" paddingCharacter="SPACE" size="10" typeName="MRCWFStringRep" width="10"/>
+            </cwfInclRep>
+          </xsd:appinfo>
+        </xsd:annotation>
+        <xsd:simpleType>
+          <xsd:restriction base="xsd:string">
+            <xsd:maxLength value="10"/>
+          </xsd:restriction>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name="C_TEXT">
+        <xsd:annotation>
+          <xsd:appinfo source="http://www.wsadie.com/appinfo">
+            <initialValue kind="SPACE"/>
+          </xsd:appinfo>
+          <xsd:appinfo source="WMQI_APPINFO">
+            <cwfInclRep messageSetDefaultRep="CWF1">
+              <cwfSimpleRep accessor="readWrite" addrUnit="byte" characterSize="1" contentSize="200" offset="103" paddingCharacter="SPACE" size="200" typeName="MRCWFStringRep" width="200"/>
+            </cwfInclRep>
+          </xsd:appinfo>
+        </xsd:annotation>
+        <xsd:simpleType>
+          <xsd:restriction base="xsd:string">
+            <xsd:maxLength value="200"/>
+          </xsd:restriction>
+        </xsd:simpleType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:group>
+  <xsd:complexType name="customercomplaint_complaint">
+    <xsd:group ref="customercomplaint_complaint"/>
+  </xsd:complexType>
+    <xsd:element name="msg_CUSTOMERCOMPLAINT" type="CUSTOMERCOMPLAINT">
+    <xsd:annotation>
+      <xsd:appinfo source="WMQI_APPINFO">
+        <MRMessage messageDefinition="/0/msg_CUSTOMERCOMPLAINT;XSDElementDeclaration$MRObject"/>
+      </xsd:appinfo>
+    </xsd:annotation>
+  </xsd:element>
+</xsd:schema>

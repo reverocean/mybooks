@@ -1,0 +1,62 @@
+
+
+CREATE COMPUTE MODULE Output_in_3_different_formats
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		-- Produces 3 messages with identical content but different formats
+		-- Copy entire message		
+		SET OutputRoot = InputRoot;	
+		-- Send first msg as XML		
+		SET OutputRoot.Properties.MessageFormat = 'XML1';
+		-- propagate and keep all trees		
+		PROPAGATE DELETE NONE;
+		-- after return from propagate, send same msg as CWF		
+		SET OutputRoot.Properties.MessageFormat = 'CWF1';
+		PROPAGATE DELETE NONE;
+		-- after return from propagate, send same msg as TDS		
+		SET OutputRoot.Properties.MessageFormat = 'TDS1';
+		-- no propagate here, just return to leave module.		
+		RETURN TRUE;
+	END;
+END MODULE;
+
+CREATE COMPUTE MODULE Compute_Reply
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		-- copy only headers and fill Body step-by-step		
+		CALL CopyMessageHeaders();
+		-- YourComplaint fields are taken as-is from COMPLAINT		
+		SET OutputRoot.MRM.YourComplaint.Reference =
+		InputBody.Complaint.Reference;
+		SET OutputRoot.MRM.YourComplaint.Text =
+		InputBody.Complaint.Text;
+		SET OutputRoot.MRM.YourComplaint.Type =
+		InputBody.Complaint.Type;
+		-- Reply.OurReference is concatenated from DEPT-REFERENCE		
+		SET OutputRoot.MRM.Reply.OurReference =
+		InputBody.Admin.Dept
+		|| '-' ||
+		InputBody.Admin.Reference;
+		-- Reply.Text is just a text string.		
+		SET OutputRoot.MRM.Reply.Text = 'Your Complaint has been received.';
+		-- Make sure to set Properties.MessageType		
+		SET OutputRoot.Properties.MessageType = 'Complaint_Reply';
+		-- we will set MessageFormat in the next node		
+		RETURN TRUE;
+	END;
+
+	CREATE PROCEDURE CopyMessageHeaders() 
+	BEGIN
+		DECLARE I INTEGER;
+		DECLARE J INTEGER;
+		SET I = 1;
+		SET J = CARDINALITY(InputRoot.*[]);
+		WHILE I < J DO
+			SET OutputRoot.*[I] = InputRoot.*[I];
+			SET I = I + 1;
+		END WHILE;
+	END;
+
+END MODULE;
+
+
