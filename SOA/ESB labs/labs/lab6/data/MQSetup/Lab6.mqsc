@@ -1,5 +1,0 @@
-******************************************
-* Define Queues for Demo :  
-******************************************
-
-DEFINE QL(LAB6_OUT)    PUT(ENABLED) GET(ENABLED) BOTHRESH(0) USAGE(NORMAL) REPLACE

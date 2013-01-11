@@ -1,0 +1,21 @@
+<CUSTOMERCOMPLAINT>
+	<VERSION>1</VERSION>
+	<CUSTOMER_NAME>
+		<N_FIRST>Ed</N_FIRST>
+		<N_LAST>Fletcher</N_LAST>
+	</CUSTOMER_NAME>
+	<CUSTOMER_ADDRESS>
+		<A_LINE>Mail Point 135</A_LINE>
+		<A_LINE>Hursley Park</A_LINE>
+		<TOWN>Winchester</TOWN>
+		<ZIP>SO21 2JN</ZIP>
+		<COUNTRY>UK</COUNTRY>
+	</CUSTOMER_ADDRESS>
+	<COMPLAINT>
+		<C_TYPE>Delivery</C_TYPE>
+		<C_REF>XYZ123ABC</C_REF>
+		<C_TEXT>
+			My order was delivered in time, but the package was torn and dirty.
+		</C_TEXT>
+	</COMPLAINT>
+</CUSTOMERCOMPLAINT>

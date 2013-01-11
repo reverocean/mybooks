@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<msgCoreModel:MRMessageSet xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:MSGModel="http://www.ibm.com/msgmodel/2003/MSGModel" xmlns:msgCoreModel="http://www.ibm.com/msgmodel/2003/MSGCoreModel" name="LAB5_SET" msetVersionNo="" currentMessageSetId="//@MRMessageSetID.0">
-  <MRMessageSetRep xsi:type="MSGModel:MRCWFMessageSetRep" name="CWF1" daysInFirstWeekOfTheYear="Four" firstDayOfWeek="Monday" timeZoneID="0" allowLenientDateTimes="false"/>
-  <MRMessageSetRep xsi:type="MSGModel:MRXMLMessageSetRep" name="XML1" timeZoneID="0" allowLenientDateTimes="false" suppressDOCTYPE="true" doctypeSystemID="www.mrmnames.net/L4MCN5C002001" doctypePublicID="L4MCN5C002001" rootTagName="" suppressXMLDeclaration="true" outputNamespaceDeclaration="asRequired"/>
-  <MRMessageSetRep xsi:type="MSGModel:MRTDSMessageSetRep" name="TDS1" centuryWindow="53" timeZoneID="0" allowLenientDateTimes="false" messagingStandard="Unknown" groupIndicator="" groupTerminator="" tagDataSeparator="" decimalPoint="." escapeCharacter="" reservedChars="" outputCompressionTechnique="None" inputCompressionTechnique="None" defaultCCSID="367" booleanTrueRepresentation="1" booleanFalseRepresentation="0" booleanNullRepresentation="0" delimiter="+++" trimFixLengthString="NoTrim">
-    <tagLength xsi:nil="true"/>
-  </MRMessageSetRep>
-  <MRMessageSetID repositoryId="-1302751445" messageSetId="1"/>
-</msgCoreModel:MRMessageSet>

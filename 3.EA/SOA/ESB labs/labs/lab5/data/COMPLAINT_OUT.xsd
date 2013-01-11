@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:complexType name="t_Complaint_Out">
+		<xsd:sequence>
+			<xsd:element name="Version">
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:short">
+						<xsd:minInclusive value="0"/>
+						<xsd:maxInclusive value="9"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+            <xsd:element name="Customer" type="t_Customer"/>
+			<xsd:element name="Complaint" type="t_Complaint"/>
+			<xsd:element minOccurs="0" name="Admin" type="t_Admin"/>
+            <xsd:element minOccurs="0" name="Accounts" type="t_Accounts"/>
+        </xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="t_Name">
+		<xsd:sequence>
+			<xsd:element name="First">
+				<xsd:annotation>
+					<xsd:appinfo source="http://www.wsadie.com/appinfo">
+						<initialValue kind="SPACE"/>
+					</xsd:appinfo>
+				
+        </xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:length value="10"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="Last">
+				<xsd:annotation>
+					<xsd:appinfo source="http://www.wsadie.com/appinfo">
+						<initialValue kind="SPACE"/>
+					</xsd:appinfo>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:length value="10"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="t_Address">
+		<xsd:sequence>
+			<xsd:element maxOccurs="2" minOccurs="1" name="Line">
+				<xsd:annotation>
+					<xsd:appinfo source="http://www.wsadie.com/appinfo">
+						<initialValue kind="SPACE"/>
+					</xsd:appinfo>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:length value="20"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="Town">
+				<xsd:annotation>
+					<xsd:appinfo source="http://www.wsadie.com/appinfo">
+						<initialValue kind="SPACE"/>
+					</xsd:appinfo>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:length value="10"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="Zip">
+				<xsd:annotation>
+					<xsd:appinfo source="http://www.wsadie.com/appinfo">
+						<initialValue kind="SPACE"/>
+					</xsd:appinfo>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:length value="10"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="Country">
+				<xsd:annotation>
+					<xsd:appinfo source="http://www.wsadie.com/appinfo">
+						<initialValue kind="SPACE"/>
+					</xsd:appinfo>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:length value="2"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+		</xsd:sequence>
+		</xsd:complexType>
+	<xsd:complexType name="t_Complaint">
+		<xsd:sequence>
+			<xsd:element name="Type">
+				<xsd:annotation>
+					<xsd:appinfo source="http://www.wsadie.com/appinfo">
+						<initialValue kind="SPACE"/>
+					</xsd:appinfo>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:length value="10"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="Reference">
+				<xsd:annotation>
+					<xsd:appinfo source="http://www.wsadie.com/appinfo">
+						<initialValue kind="SPACE"/>
+					</xsd:appinfo>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:length value="10"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="Text">
+				<xsd:annotation>
+					<xsd:appinfo source="http://www.wsadie.com/appinfo">
+						<initialValue kind="SPACE"/>
+					</xsd:appinfo>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:length value="200"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+		</xsd:sequence>
+		</xsd:complexType>
+	<xsd:complexType name="t_Admin">
+		<xsd:sequence>
+			<xsd:element minOccurs="1" name="Reference">
+				<xsd:annotation>
+					<xsd:appinfo source="http://www.wsadie.com/appinfo">
+						<initialValue kind="SPACE"/>
+					</xsd:appinfo>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:length value="7"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="Dept">
+				<xsd:annotation>
+					<xsd:appinfo source="http://www.wsadie.com/appinfo">
+						<initialValue kind="SPACE"/>
+					</xsd:appinfo>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:length value="3"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element minOccurs="0" name="Manager" type="t_Manager"/>
+			<xsd:element name="Text">
+				<xsd:annotation>
+					<xsd:appinfo source="http://www.wsadie.com/appinfo">
+						<initialValue kind="SPACE"/>
+					</xsd:appinfo>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:length value="200"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+		</xsd:sequence>
+		</xsd:complexType>
+	<xsd:complexType name="t_Manager">
+		<xsd:sequence>
+			<xsd:element name="FirstName">
+				<xsd:annotation>
+					<xsd:appinfo source="http://www.wsadie.com/appinfo">
+						<initialValue kind="SPACE"/>
+					</xsd:appinfo>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:length value="10"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="LastName">
+				<xsd:annotation>
+					<xsd:appinfo source="http://www.wsadie.com/appinfo">
+						<initialValue kind="SPACE"/>
+					</xsd:appinfo>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:length value="10"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="Phone">
+				<xsd:annotation>
+					<xsd:appinfo source="http://www.wsadie.com/appinfo">
+						<initialValue kind="SPACE"/>
+					</xsd:appinfo>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:string">
+						<xsd:length value="4"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+		</xsd:sequence>
+		</xsd:complexType>
+	<xsd:element name="Complaint_Out" type="t_Complaint_Out">
+  </xsd:element>
+    <xsd:complexType name="t_Accounts">
+    <xsd:sequence maxOccurs="1" minOccurs="1">
+      <xsd:element maxOccurs="unbounded" minOccurs="0" name="Account" type="t_Account"/>
+    </xsd:sequence>
+  </xsd:complexType>
+    <xsd:complexType name="t_Account">
+    <xsd:sequence maxOccurs="1" minOccurs="1">
+      <xsd:element name="Number" type="xsd:int"/>
+      <xsd:element name="Type" type="xsd:string"/>
+      <xsd:element minOccurs="0" name="Amount" type="xsd:decimal"/>
+      <xsd:element minOccurs="0" name="Remarks" type="xsd:string"/>
+    </xsd:sequence>
+  </xsd:complexType>
+    <xsd:complexType name="t_Customer">
+    <xsd:sequence maxOccurs="1" minOccurs="1">
+      <xsd:element name="Name" type="t_Name"/>
+      <xsd:element name="Address" type="t_Address"/>
+            <xsd:element minOccurs="0" name="Number" type="xsd:string"/>
+        </xsd:sequence>
+  </xsd:complexType>
+</xsd:schema>
