@@ -1,0 +1,141 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Web Presentation</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/" ><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/" >Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html" >Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html" >Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html" >Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo" >Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/" >ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Web Presentation</H1>
+<HR>
+	
+<P>One of the biggest changes to enterprise applications in the last few years is the rise of web-browser based user interfaces. They bring with them a lot of advantages: no client software to install, a common UI approach, and easy universal access. There's also a lot of environments which make it easy to build a web app.
+	</P>	
+	
+<P>Preparing a web app begins with the sever software itself. Usually this has some form of configuration file which indicates which URLs are to be handled by which programs. Often a single web server can handle many kinds of programs. These programs are often dynamic and can be added to a server by placing them in an appropriate directory. The web server's job is to interpret the URL of a request and hand over control to a web server program. There are two main forms of structuring a program in a web server: as a script or as a server page. 	
+	</P>
+	
+<P>The script form is a program, usually with functions or methods to handle the http call - examples include CGI scripts and Java servlets. The program text can then do pretty much anything a program can do and the script can be broken down into subroutines, and create and use other services. It gets data from the web page by examining the http request object which is a HTML string. In some environments it does this by regular expression searching of the text string - perl's ease of doing this makes perl a popular choice for CGI scripts. Other platforms, such as Java servlets,  do this parsing for the programmer, which allows the script programmer to access the information from the request through a keyword interface: which at least means less regular expressions to mess with. The output of the web server is another HTML string - the response - which the script can write to using the usual write stream operations in the language.
+	</P>
+	
+<P>Writing an HTML response through stream commands is uncomfortable for programmers, and nearly impossible for non-programmers who would otherwise be comfortable preparing HTML pages. This led to the idea of server pages, where the program is structured around the returning text page. You write the return page in HTML and insert into the HTML scriptlets of code to execute at certain points. Examples of this approach include PHP, ASP, and JSP.
+	</P>
+	
+<P>The server page approach works well when there is little processing of the response, such as "show me the details of album # 1234". Things get a lot more messy when you have to make decisions based on the input: such as a different format for displaying classical or jazz albums.
+	</P>
+	
+<P>Because the script style works best for interpreting the request and sever page style works best for formatting a response, there's the obvious option to use a script for request interpretation and a sever page for response formatting. This separation is in fact an old idea which first surfaced in user interfaces with <A href="mvc.html" tppabs="http://martinfowler.com/isa/mvc.html"><I>Model View Controller</I></A>. Combine this with the essential notion that non-presentation logic should be factored out and we have a very good fit for the concepts of <A href="mvc.html" tppabs="http://martinfowler.com/isa/mvc.html"><I>Model View Controller</I></A>. 
+	</P>
+	
+<P>
+<A href="mvc.html" tppabs="http://martinfowler.com/isa/mvc.html"><I>Model View Controller</I></A> is a widely referenced pattern, but on that's often misunderstood. Indeed before web apps appeared on the scene most presentation I sat through of <A href="mvc.html" tppabs="http://martinfowler.com/isa/mvc.html"><I>Model View Controller</I></A> would get it wrong. A main reason for the confusion was the use of the word "controller". Controller is used in a number of different contexts, and I've usually found it used in a different way to that described in <A href="mvc.html" tppabs="http://martinfowler.com/isa/mvc.html"><I>Model View Controller</I></A>. As a result I prefer to use the term <B>input controller</B> for the controller in <A href="mvc.html" tppabs="http://martinfowler.com/isa/mvc.html"><I>Model View Controller</I></A>. 
+	</P>	
+	
+<A name="webServer-interactions.gif"></A><img align="top" src="webServer-interactions.gif" tppabs="http://martinfowler.com/isa/webServer-interactions.gif"><P>
+<I>Figure 1: A broad brush picture of how the model, view, and input controller roles work together in a web server. The controller handles the request, gets the model to do the domain logic, then gets the view to create a response based on the model</I>
+</P>
+	
+<P>
+	
+</P>	
+	
+<P>The request comes in to an input controller, which pulls information off the request. It then forwards the business logic to an appropriate model object. The model object talks to the data source and does everything indicated by the request as well as gathering information for the response. When it's done it returns control to the input controller. The input controller looks at the results and decides which view is needed to display the response. It then passes control, together with the response data, to the view. The input controller's hand off to the view often isn't a straight call, often involves forwarding with the data placed in an agreed place on some form of http session object that's shared between the input controller and the view.
+	</P>	
+	
+<P>The first, and most important reason for applying <A href="mvc.html" tppabs="http://martinfowler.com/isa/mvc.html"><I>Model View Controller</I></A> is to ensure that models are completely separated from the web services. A good thought experiment for this is to ask yourself how much change you would need to make to existing code to add a command line interface to the program. Separating out the processing into separate <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> or <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> objects will make it easier to test them as well.This is particularly important if you are using a server page as your view.
+	</P>
+	
+<P>At this point we come to a second use of the word "controller". A lot of user-interface designs look to separate the presentation objects from the domain objects with an intermediate layer of <A href="applicationController.html" tppabs="http://martinfowler.com/isa/applicationController.html"><I>Application Controller</I></A> objects. The purpose of an <A href="applicationController.html" tppabs="http://martinfowler.com/isa/applicationController.html"><I>Application Controller</I></A> is to handle the flow of an application, deciding which screens should appear in which order. An <A href="applicationController.html" tppabs="http://martinfowler.com/isa/applicationController.html"><I>Application Controller</I></A> may appear as part of the presentation layer, or you can think of it as a separate layer which mediates between the presentation and domain layers. <A href="applicationController.html" tppabs="http://martinfowler.com/isa/applicationController.html"><I>Application Controller</I></A>s may be written to be independent of any particular presentation, in which case they can be reused between presentations. This works well if you have different presentations with the same basic flow and navigation, although often it's best to give different presentations a different flow.
+	</P>
+	
+<P>Not all systems need an <A href="applicationController.html" tppabs="http://martinfowler.com/isa/applicationController.html"><I>Application Controller</I></A>. They are useful only if your system has a lot of logic about the order of screens and the navigation between them. If someone can pretty much see any screen in any order, then you'll probably have little need for an <A href="applicationController.html" tppabs="http://martinfowler.com/isa/applicationController.html"><I>Application Controller</I></A>.
+	</P>
+	
+
+<a name="N5E"></a>
+
+<H2>View Patterns</H2>
+	
+<P>On the view side there are three patterns to think about: <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A>, <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html" ><I>Template View</I></A> and <A href="htmlRenderer.html" tppabs="http://martinfowler.com/isa/htmlRenderer.html"><I>Two Step View</I></A>. These represent essentially two choices, whether to use <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A> or <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html" ><I>Template View</I></A>, and whether two use one stage or a <A href="htmlRenderer.html" tppabs="http://martinfowler.com/isa/htmlRenderer.html"><I>Two Step View</I></A>. The basic patterns for <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A> and <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html" ><I>Template View</I></A> are single stage. <A href="htmlRenderer.html" tppabs="http://martinfowler.com/isa/htmlRenderer.html"><I>Two Step View</I></A> is a variation you can apply to either <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A> or <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html" ><I>Template View</I></A>.
+	</P>
+	
+<P>I'll start with the choice between  <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html" ><I>Template View</I></A> and <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A>. <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html" ><I>Template View</I></A> allows you write the presentation in the structure of the page and embed markers into the page to indicate where dynamic content needs to go. There are quite a few popular platforms that are  based on this pattern. Many of the more popular of are the sever pages technologies (ASP, JSP, PHP) that allow you to put a full programming language into the page. This clearly provides a lot of power and flexibility, sadly it also leads to very messy code that's difficult to maintain. As a result if you use server page technology you must be very disciplined to keep programming logic out of the page structure, often by using a companion object.
+	</P>
+	
+<P>The <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A> uses a transform style of program, the usual example is XSLT. This can be very effective if you are working with domain data that is in XML format, or can easily be converted to XML. An input controller picks the appropriate XSLT stylesheet and applies it to XML that's gleaned from the model.
+	</P>
+	
+<P>If you use procedural scripts as your view, you can write the code in either <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A> or <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html" ><I>Template View</I></A> style - or indeed in some interesting mix of the two. I've noticed that most scripts predominantly follow one of these two patterns as their main form.
+	</P>
+	
+<P>The second decision is whether to be single stage or use <A href="htmlRenderer.html" tppabs="http://martinfowler.com/isa/htmlRenderer.html"><I>Two Step View</I></A>
+	
+</P>
+	
+<A name="1stage-1appear.gif"></A><img align="top" src="1stage-1appear.gif" tppabs="http://martinfowler.com/isa/1stage-1appear.gif"><P>
+<I>Figure 2: A single stage view</I>
+</P>
+	
+<P>A single stage view mostly has one view component for each screen in the application. The view takes domain oriented data and renders it into HTML. I say mostly because similar logical screens may share views, but most of the time you can think of it as one view per screen. 
+	</P>
+	
+<A name="2stage-1appear.gif"></A><img align="top" src="2stage-1appear.gif" tppabs="http://martinfowler.com/isa/2stage-1appear.gif"><P>
+<I>Figure 3: A two stage view</I>
+</P>
+	
+<P>A two stage view breaks this process into two stages, producing a logical screen from the domain data, then rendering that logical screen into HTML. There is one first stage view for each screen, but only one second stage view for the whole application.
+	</P>	
+	
+<P>The advantage of the <A href="htmlRenderer.html" tppabs="http://martinfowler.com/isa/htmlRenderer.html"><I>Two Step View</I></A>'s is that it puts the decision of what HTML to use in a single place, this makes global changes to the HTML easy since there's only one object to alter and every screen on the site alters. Of course you only get that advantage if your logical presentation stays the same, so it works best with sites where different screens use the same basic layout. Highly design intensive sites won't be able to come up with a good logical screen structure. 
+	</P>
+	
+<P>
+<A href="htmlRenderer.html" tppabs="http://martinfowler.com/isa/htmlRenderer.html"><I>Two Step View</I></A> work even better if you have a web application where its services are being used by multiple front end customers, such as multiple airlines fronting the same basic reservation system. Within the limits of the logical screen, each front end can have a different appearance by using a different second stage.
+	</P>
+
+
+<a name="NC2"></a>
+
+<H2>Input Controller Patterns</H2>
+	
+<P>There are two patterns for the input controller. In the most common case you have an input controller object for every page on your web site. In the simplest case this <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A> can be a server page itself: combining the roles of view and input controller. In many implementations it makes things easier to split out the input controller into a separate object. The input controller then can create appropriate models to do the processing and instantiate a view to return the result. Often you'll find there isn't quite a one-to-one relationship between <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A>s and views. A more precise thought is that you have a <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A> for each action: where an action is a button or link. Most of the time the actions correspond to pages, but occasionally they don't - such as a link that may go to a couple of different pages depending some condition.
+	</P>
+	
+<P>With any input controller there are two responsibilities: handling the http request and deciding what to do with it. Often it makes sense to separate these two roles. You can use a server page to handle the request, it then delegates to a separate helper object to decide what to do with it. <A href="frontController.html" tppabs="http://martinfowler.com/isa/frontController.html"><I>Front Controller</I></A> goes further in this separation by having only one object that handles all requests. This single handler  interprets the URL to figure out what the kind of request it's dealing with and creates a separate object to process the request. This allows you to centralize all http handling within a single object avoiding the need to reconfigure the web server whenever you change the action structure of the site. 
+	</P>
+
+
+<a name="NDA"></a>
+
+<H2>Further Reading</H2>
+	
+<P>Most books on web server technologies provide a chapter or two on how to produce good designs with them, although these are often buried in the technological descriptions. An excellent chapter to read on Java web design is Chapter 9 of <a href="http://www.amazon.com/exec/obidos/ASIN/0201616173">[Brown et al]</a>. The best source for further patterns is <a href="http://www.amazon.com/exec/obidos/ASIN/0130648841">[Alur, Crupi, and Malks]</a>, most of these patterns can be used in non-Java situations. I stole the terminology on separating input and application controllers from <a href="">[Knight and Dai]</a>
+	
+</P>
+
+
+	
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/" ><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/" ><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/" >Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

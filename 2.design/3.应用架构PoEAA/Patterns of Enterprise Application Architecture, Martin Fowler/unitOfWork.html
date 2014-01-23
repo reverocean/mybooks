@@ -1,0 +1,299 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Unit of Work</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+	
+<HR>
+<H1 align="center">Unit of Work</H1>
+<HR>
+	
+<P align="center">
+<I>Maintains a list of objects that are affected by a business transaction and coordinates the writing out of changes and resolution of concurrency problems.</I>
+</P>
+	
+<P align="center">
+		
+<img src="unitOfWorkInterface.gif" tppabs="http://martinfowler.com/isa/unitOfWorkInterface.gif">
+	</P>
+	
+		
+<P>When you're pulling data in and out of a database, it's important to keep track of what you've changed, otherwise you won't get stuff written back into the database. Similarly you have to insert new objects you create and remove any object you've deleted.
+	</P>
+		
+<P>You could change the database with each change to your object model, but this can lead to lots of very small calls to the database, which ends up being very slow. Furthermore it requires you to have a transaction open for the whole interaction - which is impractical if you have a business transaction that spans multiple requests. This situation is even worse if you need to keep track of objects you've read so you can avoid inconsistent reads. 
+	</P>
+		
+<P>A <I>Unit of Work</I> keeps track of everything you do during a business transaction that can have ramifications to the database. When you are done, it figures out all everything that needs to be done to alter the database as a result of all the work.
+	</P>
+	
+	
+<H2>How it Works</H2>
+		
+<P>The obvious things that cause you to deal with the database are changes: new object created and existing ones updated or deleted. <I>Unit of Work</I> is an object that keeps track of these things. As soon as you start doing something that may affect a database, you create a <I>Unit of Work</I> to keep track of the changes. Every time you create, change, or delete an object you tell the <I>Unit of Work</I>. You can also let the <I>Unit of Work</I> know about objects you've read. This way the <I>Unit of Work</I> can check for inconsistent reads by verifying that none of the objects changed on the database during the business transaction.
+	</P>
+		
+<P>The key thing about <I>Unit of Work</I> is that when it comes time to commit, the <I>Unit of Work</I> decides what to do. It opens a transaction, does any concurrency checking (using <A href="pessimistic.html" tppabs="http://martinfowler.com/isa/pessimistic.html"><I>Pessimistic Offline Lock</I></A> or <A href="optimistic.html" tppabs="http://martinfowler.com/isa/optimistic.html"><I>Optimistic Offline Lock</I></A> and writes changes out to the database. Application programmers never explicitly call methods to update the database. This way they don't have to keep track of what's changed, nor do they need to worry about how referential integrity affects the order in which they need to do things.
+	</P>
+		
+<P>Of course for this to work the <I>Unit of Work</I> needs to know what objects it should keep track of. You can do this either by the caller doing it or by getting the object to tell the <I>Unit of Work</I>. 
+	</P>
+		
+<P>With <B>caller registration </B>the user of an object needs to remember to register the object with the <I>Unit of Work</I> for changes. Any objects that aren't registered won't get written out on commit. Although this allows forgetfulness to cause trouble, it does give flexibility in allowing people to make in-memory changes that they don't want written out - although we would argue that is going to cause far more confusion that would be worthwhile. It's better to make an explicit copy for that purpose.
+	</P>
+		
+<A name="callerRegistration.gif"></A><img align="top" src="callerRegistration.gif" tppabs="http://martinfowler.com/isa/callerRegistration.gif"><P>
+<I>Figure 1: Having the caller register a changed object</I>
+</P>
+		
+<P>With <B>object  registration</B> the onus is removed from the caller. The usual trick here is to place registration methods in object methods. Loading an object from the database registers the object as a clean object, the setting methods cause the object to be registered as dirty. For this scheme to work the <I>Unit of Work</I> needs to either be passed to the object or to be in a well known place. Passing  the <I>Unit of Work</I> around is tedious, but it's usually no problem to have the <I>Unit of Work</I> present in some kind of session object.
+	</P>
+		
+<A name="objectRegistration.gif"></A><img align="top" src="objectRegistration.gif" tppabs="http://martinfowler.com/isa/objectRegistration.gif"><P>
+<I>Figure 2: Getting the receiver object to register itself</I>
+</P>
+		
+<P>Even object registration leaves something to remember, that is the developer of the object needs to remember to add a registration call in the right places. The consistency becomes habitual, but is still an awkward bug when it's missed.
+	</P>
+		
+<P>This is a natural place for code generation to generate appropriate calls, but that only works when you can clearly separate generated and non-generated code. This turns out to be particularly suited to aspect-oriented programming. I've also come across post-processing of the object files to pull this off. In this example a post-processor examined all the Java .class files, looked for the appropriate methods and inserted registration calls into the byte code. This kind of finicking around feels dirty, but it separates the database code from the regular code. Aspect-oriented approach will do this more cleanly with source code, and as aspect oriented programming tools become more commonplace I would expect to see this strategy being used.
+	</P>
+		
+<P>Another technique I've seen is <B>unit of work controller</B>, which the TOPLink product uses. Here the <I>Unit of Work</I> handles all reads from the database, and registers clean objects whenever they are read. Rather than marking objects as dirty the <I>Unit of Work</I> takes a copy at read time, and then compares the object at commit time. Although this adds overhead to the commit process, it allows a selective update of only those fields that were actually changed, as well as avoiding registration calls in the domain objects. A hybrid approach is to take copies only of objects that are changed, while this requires registration, it supports selective update and greatly reduces the overhead of the copy if there many more reads than updates.
+	</P>
+		
+<A name="unitOfWorkController.gif"></A><img align="top" src="unitOfWorkController.gif" tppabs="http://martinfowler.com/isa/unitOfWorkController.gif"><P>
+<I>Figure 3: Using the <I>Unit of Work</I> as the controller for the database access</I>
+</P>
+		
+<P>Creating an object is often a special time to consider caller registration. It's not uncommon for people to want to create objects that are only supposed to transient. A good example of this is in testing domain objects where the tests will run much faster without database writes. Caller registration can make this apparent. However there are other solutions, such as providing a transient constructor that doesn't register with the unit or work, or better still providing a <A href="http://martinfowler.com/isa/specialCase.html"><I>Special Case</I></A>
+			<I>Unit of Work</I> that does nothing with a commit.
+	</P>
+		
+<P>Another area where a <I>Unit of Work</I> can be helpful is in update order when a database uses referential integrity. Most of the time you can avoid this issue by ensuring that the database only checks referential integrity when the transaction commits, rather than with each SQL call. Most databases allow it, and if available there's no good reason not to do it. If you can't then the <I>Unit of Work</I> is the natural place to sort out the update order. In smaller systems this can be done with explicit code that contains details about which tables to write first based on the foreign key dependencies. In a larger application it's better to use metadata to figure out which order to write to the database. How you do that is beyond the scope of this book, and a common reason to use a commercial tool. If you have to do it yourself I'm told the key to the puzzle is a topological sort. 
+	</P>
+		
+<P>You can use a similar technique to minimize deadlocks. If every transaction uses the same sequence of tables to edit, then you greatly reduce the chances of getting deadlocks. The <I>Unit of Work</I> is an ideal place to hold a fixed sequence of table writes so that you always touch the tables in the same order. 
+	</P>
+		
+<P>Objects need to be able to find their current <I>Unit of Work</I>. A good way to do this is to use a thread scoped <A href="http://martinfowler.com/isa/registry.html"><I>Registry</I></A>. Another approach is to pass the <I>Unit of Work</I> around to objects that need it, either in method calls or by passing in the <I>Unit of Work</I> when you create an object. In either case make sure you can't get more than one thread getting access to a <I>Unit of Work</I>, there lies the way to madness.
+	</P>
+		
+<P>
+			
+<I>Unit of Work</I> makes an obvious point to handle batch updates. The idea behind a <B>batch update</B> is to send multiple SQL commands as a single unit so that they can be processed in a single remote call. This is particularly important for updates where many updates, inserts, and deletes are often sent in rapid succession. Different environments provide different levels of support for batch updates. JDBC has a batch update facility which allows you to add individual statements to another statement to batch them up. If you don't have this you can mimic this capability by building up a string that has multiple SQL statements and then submitting that string as one statement, <font color="#FF0000">[missing reference]</font> describes an example of this for the Microsoft platforms. However if you do this, check to see if it interferes with statement pre-compilation.
+	</P>
+	
+<P>
+<I>Unit of Work</I> works with any transactional resource, not just databases, so you can also use it to coordinate with message queues and transaction monitors. 
+	</P>
+	
+		
+<H3 style="margin-left: 2em; margin-right: 2em">.NET</H3>
+			
+<P style="margin-left: 2em; margin-right: 2em">The <I>Unit of Work</I> in .NET is done by the disconnected data set, which is a slightly different <I>Unit of Work</I> to the classical variety. Most <I>Unit of Work</I> I've come across register and track changes to objects. .NET reads data from the database into a data set, which is a series of objects arranged like the tables, rows and columns of the database. The data set is essentially an in-memory mirror image of the result of one or SQL queries. Each DataRow has the concept of a version (current, original, proposed) and a state (unchanged, added, delete, modified). This information, together with the fact that the data set mimics the database structure,  makes it straightforward to write changes out to the database. 
+		</P>
+		
+	
+	
+<H2>When to Use it</H2>
+		
+<P>The fundamental problem that <I>Unit of Work</I> deals with is keeping track of the various objects that you've manipulated, so that you know which objects you need to consider to synchronize your in-memory data with the database. If you are able to do all your work within a system transaction, then the only objects you need to worry about are those you alter. Although <I>Unit of Work</I> is generally the best way of doing this, there are alternatives.
+	</P>
+		
+<P>Perhaps the simplest alternative is to explicitly save any object whenever you alter it. The problem here is that you may get many more database calls than you would like, since if you alter one object in three different points in your work, then you get three calls rather than one call in its final state.
+	</P>
+		
+<P>To avoid multiple database calls, you can leave all your updates to the end. To do this you need to keep track of all the objects that have changed. You can do this with variables in your code, but this soon becomes unmanageable once you have more than a few. Such variables often can work fine with a <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>, but is very difficult with a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>.
+	</P>
+		
+<P>Rather than keep objects in variables you can give each object a dirty flag which you set when the object changes. Then you need to find all the dirty objects at the end of your transaction and write them out. The value of this technique hinges on how easy it is to find them. If all your objects are in a single hierarchy, then you can traverse the hierarchy and write out any object that's been changed. But a more general object network, such as a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>, is harder to traverse.
+	</P>
+		
+<P>The great strength of <I>Unit of Work</I> is that it keeps all this information in one place. Once you have <I>Unit of Work</I> working for you, you really don't have to remember to do much in order to keep track of your changes. <I>Unit of Work</I> also is a firm platform for more complicated situations, such as handling business transactions that span several system transactions using  <A href="optimistic.html" tppabs="http://martinfowler.com/isa/optimistic.html"><I>Optimistic Offline Lock</I></A> and <A href="pessimistic.html" tppabs="http://martinfowler.com/isa/pessimistic.html"><I>Pessimistic Offline Lock</I></A>.
+	</P>
+	
+	
+		
+<H2>Example: 
+			<I>Unit of Work</I> with Object Registration (Java)</H2>
+		
+<P>
+<I>by David Rice</I>
+</P>
+		
+<P>Here's a unit of work that can track all changes for a given business transaction and then commit them to the database when instructed to do so.   Our domain layer has a <A href="http://martinfowler.com/isa/layerSupertype.html"><I>Layer Supertype</I></A>, DomainObject, with which the unit of work will interact.  To store the change set we will use three lists to store new, dirty, and removed domain objects. </P>
+		
+<pre>class UnitOfWork... 
+	private List newObjects = new ArrayList();
+	private List dirtyObjects = new ArrayList();
+	private List removedObjects = new ArrayList();
+</pre>
+		
+<P>The registration methods maintain the state of these lists.  These methods must perform basic assertions such as checking that an id is not null or that a dirty object is not being registered as new.</P>
+		
+<pre>class UnitOfWork... 
+	public void registerNew(DomainObject obj) {
+		Assert.notNull("id not null", obj.getId());
+		Assert.isTrue("object not dirty", !dirtyObjects.contains(obj));
+		Assert.isTrue("object not removed", !removedObjects.contains(obj));
+		Assert.isTrue("object not already registered new", !newObjects.contains(obj));
+		newObjects.add(obj);
+	}
+
+	public void registerDirty(DomainObject obj) {
+		Assert.notNull("id not null", obj.getId());
+		Assert.isTrue("object not removed", !removedObjects.contains(obj));
+		if (!dirtyObjects.contains(obj) &amp;&amp; !newObjects.contains(obj)) {
+			dirtyObjects.add(obj);
+		}
+	}
+
+	public void registerRemoved(DomainObject obj) {
+		Assert.notNull("id not null", obj.getId());
+		if (newObjects.remove(obj)) return;
+		dirtyObjects.remove(obj);
+		if (!removedObjects.contains(obj)) {
+			removedObjects.add(obj);
+		}
+	}
+
+	public void registerClean(DomainObject obj) {
+		Assert.notNull("id not null", obj.getId());
+	}
+</pre>
+		
+<P>Notice that registerClean() doesn't do anything here.  A common practice is to place an <A href="identityMap.html" tppabs="http://martinfowler.com/isa/identityMap.html"><I>Identity Map</I></A> within a unit of work.  An <A href="identityMap.html" tppabs="http://martinfowler.com/isa/identityMap.html"><I>Identity Map</I></A> is necessary most anytime you are storing domain object state in memory, such as in this unit of work, as multiple copies of the same object will result in undefined behavior.  Were an <A href="identityMap.html" tppabs="http://martinfowler.com/isa/identityMap.html"><I>Identity Map</I></A> in place registerClean() would put the registered object into the map.  Likewise registerNew() would put a new object in the map and registerRemoved() would remove a deleted object from the map.  Without the <A href="identityMap.html" tppabs="http://martinfowler.com/isa/identityMap.html"><I>Identity Map</I></A> you have the option of not including registerClean() in your <I>Unit of Work</I>.   I've seen implementations of registerClean() that remove changed objects from the dirty list but partially rolling back changes is always tricky.  Be careful when reversing any state in the change set.</P>
+		
+<P>commit() will locate the <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A> for each object and invoke the appropriate mapping method.  updateDirty() and deleteRemoved() are not shown but they would behave in similar fashion to insertNew(), exactly as would expect.</P>
+		
+<pre>class UnitOfWork... 
+	public void commit() {
+		insertNew();
+		updateDirty();
+		deleteRemoved();
+	}
+
+	private void insertNew() {
+		for (Iterator objects = newObjects.iterator(); objects.hasNext();) {
+			DomainObject obj = (DomainObject) objects.next();
+			MapperRegistry.getMapper(obj.getClass()).insert(obj);
+		}
+	}
+</pre>
+		
+<P>Not included in this <I>Unit of Work</I> is tracking of any objects we've read and would like to check for inconsistent read errors upon commit.  This is addressed in <A href="optimistic.html" tppabs="http://martinfowler.com/isa/optimistic.html"><I>Optimistic Offline Lock</I></A>
+</P>
+		
+<P>Next, we need to facilitate object registration.  First, each domain object needs to find the <I>Unit of Work</I> serving the current business transaction.  Since the <I>Unit of Work</I> will be needed by the entire domain model passing it around as a parameter is probably unreasonable.  As each business transaction executes within a single thread we can associate the <I>Unit of Work</I> with the currently executing thread using the java.lang.ThreadLocal class.  Keeping things simple we'll add this functionality by using static methods on our <I>Unit of Work</I> class.  If we already had some sort of session object associated to the business transaction execution thread we should place the current <I>Unit of Work</I> on that session object rather than add the management overhead of another thread mapping.  Besides, the <I>Unit of Work</I> would logically belong to the session anyway.</P>
+		
+<pre>class UnitOfWork... 
+	private static ThreadLocal current = new ThreadLocal();
+
+	public static void newCurrent() {
+		setCurrent(new UnitOfWork());
+	}
+
+	public static void setCurrent(UnitOfWork uow) {
+		current.set(uow);
+	}
+
+	public static UnitOfWork getCurrent() {
+		return (UnitOfWork) current.get();
+	}
+</pre>
+		
+<P>We can now provide our abstract domain object marking methods to register itself with the current <I>Unit of Work</I>:</P>
+		
+<pre>class DomainObject... 
+	protected void markNew() {
+		UnitOfWork.getCurrent().registerNew(this);
+	}
+
+	protected void markClean() {
+		UnitOfWork.getCurrent().registerClean(this);
+	}
+
+	protected void markDirty() {
+		UnitOfWork.getCurrent().registerDirty(this);
+	}
+
+	protected void markRemoved() {
+		UnitOfWork.getCurrent().registerRemoved(this);
+	}
+</pre>
+		
+<P>Concrete domain objects then need to remember to mark themselves new and dirty where appropriate. </P>
+		
+<pre>class Album... 
+	public static Album create(String name) {
+		Album obj = new Album(IdGenerator.nextId(), name);
+		obj.markNew();
+		return obj;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+		markDirty();
+	}
+</pre>
+		
+<P>Not shown is that registration of removed objects can be handled by a remove() method on the abstract domain object and if you've implemented registerClean() your <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A> will need to register any newly loaded object as clean.</P>
+		
+<P>The final piece is to register and commit the <I>Unit of Work</I> where appropriate.  This can be done in either explicit or implicit fashion.  Here's what explicit <I>Unit of Work</I> management looks like:</P>
+		
+<pre>class EditAlbumScript... 
+	public static void updateTitle(Long albumId, String title) {
+		UnitOfWork.newCurrent();
+		Mapper mapper = MapperRegistry.getMapper(Album.class);
+		Album album = (Album) mapper.find(albumId);
+		album.setTitle(title);
+		UnitOfWork.getCurrent().commit();
+	}
+</pre>
+		
+<P>Beyond the simplest of applications implicit <I>Unit of Work</I> management is more appropriate to avoid repetitive, tedious coding.  Here's a servlet <A href="http://martinfowler.com/isa/layerSupertype.html"><I>Layer Supertype</I></A> that registers and commits the <I>Unit of Work</I> for its concrete subtypes.  Subtypes will implement handleGet() rather than override doGet().  Any code executing within handleGet() will have a <I>Unit of Work</I> with which to work.</P>
+		
+<pre>class UnitOfWorkServlet... 
+	final protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		try {
+			UnitOfWork.newCurrent();
+			handleGet(request, response);
+			UnitOfWork.getCurrent().commit();
+		} finally {
+			UnitOfWork.setCurrent(null);
+		}
+	}
+
+	abstract void handleGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException;
+</pre>
+		
+<P>The above servlet example is obviously a bit simplistic in that system transaction control is skipped.  And if you were using <A href="frontController.html" tppabs="http://martinfowler.com/isa/frontController.html"><I>Front Controller</I></A> you would be more likely to wrap <I>Unit of Work</I> management around your commands rather than doGet().  Similar wrapping approaches can be taken with just about any execution context.</P>
+	
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

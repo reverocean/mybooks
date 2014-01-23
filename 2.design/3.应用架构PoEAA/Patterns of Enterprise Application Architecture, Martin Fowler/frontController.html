@@ -1,0 +1,211 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Front Controller</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Front Controller</H1>
+<HR>
+
+<P align="center">
+<I>A controller that handles all requests for a web site</I>
+</P>
+
+<P align="center">
+<img src="frontController-sketch.gif" tppabs="http://martinfowler.com/isa/frontController-sketch.gif"></P>
+
+	
+<P>In a complex web site, there are many similar things you need to do when handling a web request. These things include handling security, internationalization, providing particular views for certain kinds of users, etc. If the input controller behavior is scattered across multiple objects, then much of this behavior can end up duplicated, and it's difficult to change behavior at run time.
+	</P>	
+	
+<P>The <I>Front Controller</I> consolidates all of this by channeling all the requests through a single object. This handler can carry out common behavior which can be modified at runtime with decorators. The handler then dispatches to command objects for behavior particular to a request.
+	</P>	
+
+
+<H2>How it Works</H2>
+	
+<P>A <I>Front Controller</I> handles all calls for a web site. It's usually structured in two parts: a web handler and a hierarchy of commands. The web server software directs the http request to the handler. The handler pulls just enough information from the URL and request to decide what kind of action to initiate. The handler then delegates the request to a command, which usually isn't a web handler, to carry out the action ( Figure <A href="#frontController-sequence.gif">1</A>). 
+	</P>
+	
+<P>The web handler is almost always implemented as a class, rather than a server page, as it doesn't produce any response. The commands are also classes rather than server pages, and indeed don't need to be web handlers at all, although they are usually passed the http information. The web handler itself is usually a fairly simple program which does nothing other than decide which command should be run.
+	</P>	
+	
+<P>The web handler can make the decision of which command to run either statically or dynamically. The static version involves parsing the URL and using conditional logic to decide which command to run. The dynamic version usually involves taking a standard piece of the URL and using dynamic instantiation to create a command class. 	
+	</P>
+	
+<P>The static case has the advantage of explicit logic, compile time error checking on the dispatch, and lots of flexibility in what your URLs look like. The dynamic case allows you to add new commands without changing the web handler.
+	</P>
+	
+<A name="frontController-sequence.gif"></A><img align="top" src="frontController-sequence.gif" tppabs="http://martinfowler.com/isa/frontController-sequence.gif"><P>
+<I>Figure 1: How the front controller works</I>
+</P>
+	
+<P>A particularly useful pattern to use in conjunction with <I>Front Controller</I> is <I>Intercepting Filter</I>, described in <a href="http://www.amazon.com/exec/obidos/ASIN/0130648841">[Alur, Crupi, and Malks]</a>. An intercepting filter is essentially a decorator that wraps the handler of the front controller. This allows you build a <I>filter chain </I>(or pipeline) of filters to handle different issues such as authentication, logging, locale identification. Using filters allows you to dynamically set up the filters to use at configuration time. 
+	</P>
+	
+<P>Rob Mee showed me an  interesting variation of <I>Front Controller</I> using a two stage web handler. In this case the web handler is further separated into a degenerate web handler and a dispatcher. The degenerate web handler pulls the basic data out of the http parameters and hands it to the dispatcher in such a way that the dispatcher is completely independent of the web server framework. This makes testing easier because test code can drive the dispatcher directly without having to run in web server.
+	</P>
+	
+<P>Remember that both the handler and the commands are part of the controller. As a result the commands can (and should) choose which view to use for the response. The only responsibility of the handler is in choosing which command to execute. Once it's done that, it plays no further part in that request.
+	</P>
+	
+
+
+<H2>When to Use it</H2>
+	
+<P>The <I>Front Controller</I> is a more complicated design than the it's obvious counterpart, the <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A>. It therefore needs a few advantages to be worth the effort.
+	</P>
+	
+<P>Only one <I>Front Controller</I> needs to be configured into the web server, the web handler then does the rest of the dispatching. This simplifies the configuration of the web server, which is an advantage if the web server is awkward to configure.  With dynamic commands you can add new commands without changing anything. It also eases porting, since you only have to register the handler in a web server specific way.
+	</P>
+	
+<P>Since you create new command object with each request, you don't have to worry about making the command classes thread safe. This can avoid the headaches of multi-threaded programming. You do have to make sure that you don't share any other objects, such as the model objects.
+	</P>
+	
+<P>A commonly stated advantage of a <I>Front Controller</I> is that it allows you to factor out code that's otherwise duplicated in the <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A>. To be fair, however, you can also do much of  this by using a superclass <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A>.
+	</P>
+	
+<P>Since there is just one controller, you can easily enhance its behavior at run time by using <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612">decorators</a>. You can have decorators for authentication, character encoding, internationalization and add them either using a configuration file or even while the server is running. (<a href="http://www.amazon.com/exec/obidos/ASIN/0130648841">[Alur, Crupi, and Malks]</a> describe this approach in detail under the name <I>Intercepting Filter</I>.)
+	</P>
+	
+
+
+<H2>Further Reading</H2>
+	
+<P>
+<a href="http://www.amazon.com/exec/obidos/ASIN/0130648841">[Alur, Crupi, and Malks]</a> gives a detailed description of how to implement <I>Front Controller</I> in Java. The also describe <I>Intercepting Filter</I> which goes very well with <I>Front Controller</I>. 
+	</P>
+	
+<P>A number of Java web frameworks use this pattern. An excellent example of this is <a href="http://jakarta.apache.org/struts/">Struts</a>
+	
+</P>
+
+
+
+	
+<H2>Example: Simple Display (Java)</H2>
+	
+<P>Here's a simple case of using <I>Front Controller</I> for the original and innovative task of  displaying some information about a recording artist. We'll use dynamic commands with a URL of the form <code>http://loaclhost:8080/isa/music?name=astor&amp;command=Artist</code>. The command parameter tells the web handler which command to use.
+	</P>
+	
+<A name="frontController-displayClasses.gif"></A><img align="top" src="frontController-displayClasses.gif" tppabs="http://martinfowler.com/isa/frontController-displayClasses.gif"><P>
+<I>Figure 2: The classes that implement <I>Front Controller</I></I>
+</P>
+	
+<P>We'll begin with the handler, which I've implemented as a servlet.
+	</P>
+	
+<pre>class FrontServlet... 
+	public void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws IOException, ServletException {
+		FrontCommand command = getCommand(request);
+		command.init(getServletContext(), request, response);
+		command.process();
+	}
+
+	private FrontCommand getCommand(HttpServletRequest request) {
+		try {
+			return (FrontCommand) getCommandClass(request).newInstance();
+		} catch (Exception e) {
+			throw new ApplicationException(e);
+		}
+	}
+
+	private Class getCommandClass(HttpServletRequest request) {
+		Class result;
+		final String commandClassName =
+				"frontController." + (String) request.getParameter("command") + "Command";
+		try {
+			result = Class.forName(commandClassName);
+		} catch (ClassNotFoundException e) {
+			result = UnknownCommand.class;
+		}
+		return result;
+	}
+</pre>
+	
+<P>The logic is quite straightforward. The handler takes the command name and tries to instantiate a class named by concatenating the command name and "Command". Once it has created the new command it initializes it with the necessary information from the http server. In this case I've passed in what I need for this simple example, you may well need more - such as the http session. 
+	</P>
+	
+<P>If you can't find a command, I've used the <A href="specialCase.html" tppabs="http://martinfowler.com/isa/specialCase.html"><I>Special Case</I></A> pattern and returned an unknown command. As is often the case, using <A href="specialCase.html" tppabs="http://martinfowler.com/isa/specialCase.html"><I>Special Case</I></A> allows you to avoid a lot of extra error checking.
+	</P>
+	
+<P>Commands share a fair bit of data and behavior. All of them need to be initialized with information from the web server.
+	</P>
+	
+<pre>class FrontCommand... 
+	protected ServletContext context;
+	protected HttpServletRequest request;
+	protected HttpServletResponse response;
+
+	public void init(ServletContext context,
+					 HttpServletRequest request,
+					 HttpServletResponse response)
+	{
+		this.context = context;
+		this.request = request;
+		this.response = response;
+	}
+</pre>
+	
+<P>They can also provide common behavior, such as a forward method, and define an abstract process command for the actual commands to override.
+	</P>
+	
+<pre>class FrontCommand... 
+	abstract public void process()throws ServletException, IOException ;
+
+	protected void forward(String target) throws ServletException, IOException
+	{
+		RequestDispatcher dispatcher = context.getRequestDispatcher(target);
+		dispatcher.forward(request, response);
+	}
+</pre>	
+	
+<P>The command object is then very simple, at least in this case. It just implements the process method. This involves invoking the appropriate behavior on the model objects, putting the information needed for the view into the request, and then forwarding to a <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A>.
+	</P>
+	
+<pre>class ArtistCommand... 
+	public void process() throws ServletException, IOException {
+		Artist artist = Artist.findNamed(request.getParameter("name"));
+		request.setAttribute("helper", new ArtistHelper(artist));
+		forward("/artist.jsp");
+	}
+</pre>
+	
+<P>The unknown command just brings up a boring error page.
+	</P>
+	
+<pre>class UnknownCommand... 
+	public void process() throws ServletException, IOException {
+		forward("/unknown.jsp");
+	}
+</pre>
+	
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

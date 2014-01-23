@@ -1,0 +1,461 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Page Controller</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Page Controller</H1>
+<HR>
+
+<P align="center">
+<I>An object that handles a request for a specific page or action on a web site</I>
+</P>
+
+<P align="center">
+<img src="actionController-sketch.gif" tppabs="http://martinfowler.com/isa/actionController-sketch.gif"></P>
+
+	
+<P>Most people's basic web experience is with static HTML pages. When you request static HTML you pass to the web server the name and path for a HTML document stored on the web server. The key notion is that each page on the web site is a separate document on the server. With dynamic pages things can get much more interesting since there is a much more complex relationship between path names and the file that responds. However the approach of one path leading to one file that handles the request is a simple model to understand.
+	</P>
+	
+<P>As a result <I>Page Controller</I> has one input controller for each logical page of the web site. That controller may be the page itself, as it often is in server page environments, or it may be a separate object that corresponds to that page.
+	</P>
+	
+	
+
+<H2>How it Works</H2>
+	
+<P>The basic idea behind a <I>Page Controller</I>  is to have one module on the web server act as the controller for each page on the web site. In practice, it doesn't work out to exactly one per page, since sometimes you may hit a link and get a different page depending on some dynamic information. More strictly the controllers tie to each <I>action</I> on the web site, where an action  may be clicking a link or a button.
+	</P>
+	
+<P>The <I>Page Controller</I> can be structured either as a script (CGI script, servlet, ...), or a server page (ASP, PHP, JSP, ...). Using a server page usually combines the <I>Page Controller</I> and a <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A> into the same file. While this works well for the <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A> it works less well for the <I>Page Controller</I> since it is more awkward to properly structure the module. If the page is a simple display then this is not a problem. If there is logic involved in either pulling data out of the request, or deciding which actual view to display, then you can end up with awkward scriptlet code in the server page.	
+	</P>
+	
+<P>One way of dealing with this scriptlet code is to use a helper object. In this case the first thing the server page does is to call the helper object to handle all the logic. The helper may return control to the original server page, or it may forward to a different server page to act as the view. In this case the server page is the handler of the request, but most of the controller logic lies in the helper object
+	</P>
+	
+<P>Another approach is to let a script be the handler and controller. The web server passes control to the script, the script carries out the controller's responsibilities, and finally forward to an appropriate view to display any results.
+	</P>
+	
+<P>The basic responsibilities of a <I>Page Controller</I> are:
+	</P>
+	
+<UL>
+<LI style="">Decode the URL and extract any form data to figure out all the data for the action</LI>
+<LI style="">Create and invoke any model objects to process the data. All relevant data from the HTML request should be passed to the model so that the model objects do not need any connection to the HTML request</LI>
+<LI style="">Determine which view should display the result page and forward the model information to that view.</LI>
+</UL>
+	
+	
+
+	
+<P>The <I>Page Controller</I> need not be a single class, it can invoke helper objects. This is particularly useful if several handlers need to do similar tasks. A helper class can then be a good spot to put any code that would otherwise be duplicated.
+	</P>
+	
+<P>There's no reason why you can't have some URLs handled by server pages and some URLs handled by scripts. Any URLs that have little or no controller logic are best handled with a server page, since that provides a simple mechanism that's easy to understand and modify. Any URLs with more complicated logic go to a script. I've often come across teams who want to handle everything the same way, either everything is a server page or everything is a script. Any advantages of consistency in such an application are usually offset by the problems of either scriptlet laden server pages or lots of simple pass-through scripts.
+	</P>
+	
+
+
+<H2>When to Use it</H2>
+	
+<P>The main decision point is whether to use <I>Page Controller</I> or <A href="frontController.html" tppabs="http://martinfowler.com/isa/frontController.html"><I>Front Controller</I></A>. Of the two <I>Page Controller</I> is the most familiar one to work with and leads to a natural structuring mechanism where particular actions are handled by particular server pages or script classes. You thus have to trade off the greater complexity of the <A href="frontController.html" tppabs="http://martinfowler.com/isa/frontController.html"><I>Front Controller</I></A> against the various advantages that it offers, most of which make a difference in web sites that have more  navigational complexity.
+	</P>
+	
+<P>
+<I>Page Controller</I> works particularly well in a site where most of the controller logic is pretty simple. In this case most URLs can be handled with a server page with the more complicated cases in helpers. When you're controller logic is simple, <A href="frontController.html" tppabs="http://martinfowler.com/isa/frontController.html"><I>Front Controller</I></A> adds a lot of overhead.
+	</P>	
+	
+<P>It's not uncommon to have a mix in a site where some requests are dealt with by <I>Page Controller</I>s and others are dealt with by <A href="frontController.html" tppabs="http://martinfowler.com/isa/frontController.html"><I>Front Controller</I></A>s, particularly when a team is refactoring from one to another. The two patterns actually mix together without too much trouble.
+	</P>	
+
+
+	
+<H2>Example: Simple Display with a servlet controller and a JSP view (Java)</H2>
+	
+<P>A simple example of an action controller is to display some information about something. Here we'll use an example of displaying some information about a recording artist. The URL would run something along the lines of <code>http://www.thingy.com/recordingApp/artist?name=danielaMercury</code>
+	
+</P>
+	
+<A name="actionContoller-class.gif"></A><img align="top" src="actionContoller-class.gif" tppabs="http://martinfowler.com/isa/actionContoller-class.gif"><P>
+<I>Figure 1: Classes involved in a simple display with an action controller servlet and JSP view</I>
+</P>
+	
+<P>The web server needs to be configured to recognize "/artist" as a call to ArtistController. In Tomcat you do this with the following code in the web.xml file.
+	</P>
+	
+<pre> 
+    &lt;servlet&gt;
+        &lt;servlet-name&gt;artist&lt;/servlet-name&gt;
+        &lt;servlet-class&gt;actionController.ArtistController&lt;/servlet-class&gt;
+    &lt;/servlet&gt;
+
+    &lt;servlet-mapping&gt;
+        &lt;servlet-name&gt;artist&lt;/servlet-name&gt;
+        &lt;url-pattern&gt;/artist&lt;/url-pattern&gt;
+    &lt;/servlet-mapping&gt;
+</pre>
+	
+<P>The artist controller needs to implement a method to handle the request.
+	</P>
+	
+<pre>class ArtistController... 
+	public void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws IOException, ServletException {
+		Artist artist = Artist.findNamed(request.getParameter("name"));
+		if (artist == null)
+			forward("/MissingArtistError.jsp", request, response);
+		else {
+			request.setAttribute("helper", new ArtistHelper(artist));
+			forward("/artist.jsp", request, response);
+		}
+	}
+</pre>
+	
+<P>Although this is a very simple case, it covers the salient points. First the controller needs to get create the necessary model objects to do their thing, in this case it just need to find the correct model object to display. The second part is to put the right information in the http request so that the JSP can display it properly. In this case it creates a helper and puts it into the request. Finally it forwards to the <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A> to handle the display of the data. Forwarding is a common behavior, so it sits naturally on a superclass for all action controllers
+	</P>
+	
+<pre>class ActionServlet... 
+	protected void forward(String target,
+						   HttpServletRequest request,
+						   HttpServletResponse response)
+			throws IOException, ServletException
+	{
+			RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(target);
+			dispatcher.forward(request, response);
+	}
+</pre>
+	
+<P>The main point of coupling between the <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A> and the <I>Page Controller</I> is the parameter names in the request to pass on any objects that the JSP needs to use. 
+	</P>	
+	
+<P>In this case the controller logic is really very simple, but as we get more complex controller logic we can continue to use the servlet as a controller. We can have a similar behavior for albums, with the twist that classical albums both have a different model object and are rendered with a different JSP. To do this behavior we can again use a controller class.
+	</P>
+	
+<pre>class AlbumController... 
+	public void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws IOException, ServletException
+	{
+		Album album = Album.find(request.getParameter("id"));
+		if (album == null) {
+			forward("/missingAlbumError.jsp", request, response);
+			return;
+		}
+		request.setAttribute("helper", album);
+		if (album instanceof ClassicalAlbum)
+			forward("/classicalAlbum.jsp", request, response);
+		else
+			forward("/album.jsp", request, response);
+	}
+</pre>
+	
+<P>Notice that in this case I'm using the model objects as the helper, rather than creating a separate helper class. This is worth doing if the helper class would otherwise be just a dumb forwarder to the model class. When doing this make sure that the model class doesn't have any servlet dependent code in it - if there is any servlet dependent code it should sit in a separate helper class.  
+	</P>	
+
+
+	
+<H2>Example: Using a JSP as a handler (Java)</H2>
+	
+<P>Using a servlet as a controller is one route to take, but the most common route is to have the server page itself be the controller. The problem with this approach is that it results in scriptlet code at the beginning of the server page, and as you may have gathered I think that scriptlet code has the same relationship to well-designed software that professional wrestling does to sport.
+	</P>
+	
+<P>Despite this you can have a server page as the handler of the request, while delegating control to the helper to actually carry out the controller function. This preserves the simple property of having your URLs be denoted by server pages. In this case I'll do this for the album display, where you can display an album with a URL of the form http://localhost:8080/isa/album.jsp?id=zero. Most albums are displayed directly with the album JSP, but classical albums require a different display and are displayed with a classicalAlbum JSP.
+	</P>
+	
+<P>This controller behavior appears in a helper class to the JSP. The helper is set up in the album JSP itself.
+	</P>
+	
+<pre>album.jsp... 
+
+&lt;jsp:useBean id="helper" class="actionController.AlbumConHelper"/&gt;
+&lt;%helper.init(request, response);%&gt;
+</pre>
+	
+<P>The call to init sets the helper up to carry out the controller behavior.
+	</P>
+	
+<pre>class AlbumConHelper extends HelperController... 
+	public void init(HttpServletRequest request, HttpServletResponse response) {
+		super.init(request, response);
+		if (getAlbum() == null) forward("missingAlbumError.jsp", request, response);
+		if (getAlbum() instanceof ClassicalAlbum) {
+			request.setAttribute("helper", getAlbum());
+			forward("/classicalAlbum.jsp", request, response);
+		}
+
+	}
+
+</pre>
+	
+<P>Common helper behavior naturally sits on a helper superclass.
+	</P>
+	
+<pre>class HelperController... 
+	public void init(HttpServletRequest request, HttpServletResponse response) {
+		this.request = request;
+		this.response = response;
+	}
+
+	protected void forward(String target,
+						   HttpServletRequest request,
+						   HttpServletResponse response)
+	{
+		try {
+			RequestDispatcher dispatcher = request.getRequestDispatcher(target);
+			if (dispatcher == null) response.sendError(response.SC_NO_CONTENT);
+			else dispatcher.forward(request, response);
+		} catch (IOException e) {
+			throw new ApplicationException(e);
+		} catch (ServletException e) {
+			throw new ApplicationException(e);
+		}
+	}
+</pre>
+	
+<P>The key difference between the controller behavior here and that when using a servlet, is that the handler JSP is also the default view. Unless the controller forwards to a different JSP, control reverts to the original handler. This is an advantage when you have pages where most of the time the JSP directly acts as the view. In these cases there's no forwarding to be done. The initialization of the helper acts to kick off any model behavior and set things up for the view later on. It's a simple model to follow, since people generally associate a web page with the server page that is the view for the page. This also often fits naturally with web server configuration.
+	</P>
+	
+<P>The call to initialize the handler is rather clumsy, in a JSP environment this awkwardness can be handled much better with a custom tag. Such a tag can automatically create an appropriate object, put it in the request, and initialize it. With that all you need is to put a simple tag into the JSP page.
+	</P>
+	
+<pre> 
+&lt;helper:init name = "actionController.AlbumConHelper"/&gt;
+</pre>
+	
+<P>The custom tag's implementation then does the work.
+	</P>
+	
+<pre>class HelperInitTag extends HelperTag... 
+	private String helperClassName;
+
+	public void setName(String helperClassName) {
+		this.helperClassName = helperClassName;
+	}
+
+	public int doStartTag() throws JspException {
+		HelperController helper = null;
+		try {
+			helper = (HelperController) Class.forName(helperClassName).newInstance();
+		} catch (Exception e) {
+			throw new ApplicationException("Unable to instantiate " + helperClassName, e);
+		}
+		initHelper(helper);
+		pageContext.setAttribute(HELPER, helper);
+		return SKIP_BODY;
+	}
+
+	private void initHelper(HelperController helper) {
+		HttpServletRequest request = (HttpServletRequest) pageContext.getRequest();
+		HttpServletResponse response = (HttpServletResponse) pageContext.getResponse();
+		helper.init(request, response);
+	}
+</pre>
+	
+<pre>class HelperTag... 
+	public static final String HELPER = "helper";
+
+</pre>
+	
+<P>If I'm going to use a custom tag like this, I might as well make custom tags for property access too.
+	</P>
+	
+<pre>class HelperGetTag extends HelperTag... 
+	private String propertyName;
+
+	public void setProperty(String propertyName) {
+		this.propertyName = propertyName;
+	}
+
+	public int doStartTag() throws JspException {
+		try {
+			pageContext.getOut().print(getProperty(propertyName));
+		} catch (IOException e) {
+			throw new JspException("unable to print to writer");
+		}
+		return SKIP_BODY;
+	}
+</pre>
+	
+<pre>class HelperTag... 
+	protected Object getProperty(String property) throws JspException {
+		Object helper = getHelper();
+		try {
+			final Method getter = helper.getClass().getMethod(gettingMethod(property), null);
+			return getter.invoke(helper, null);
+		} catch (Exception e) {
+			throw new JspException
+					("Unable to invoke " + gettingMethod(property) + " - " + e.getMessage());
+		}
+	}
+
+	private Object getHelper() throws JspException {
+		Object helper = pageContext.getAttribute(HELPER);
+		if (helper == null) throw new JspException("Helper not found.");
+		return helper;
+	}
+
+	private String gettingMethod(String property) {
+		String methodName = "get" + property.substring(0, 1).toUpperCase() +
+				property.substring(1);
+		return methodName;
+	}
+</pre>
+	
+<P>(You may be thinking that it's better to use the Java beans mechanism than to just invoke a getter using reflection. If so, you're probably right... and also probably intelligent enough to figure out how to change the method to do that)
+	</P>
+	
+<P>With the getting tag defined, I can use it to pull information out of the helper. The tag is both shorter and removes the chances of me mizpelling 'helper'.
+	</P>
+	
+<pre> 
+&lt;B&gt;&lt;helper:get property = "title"/&gt;&lt;/B&gt;
+</pre>
+
+
+	
+<H2>Example: Page Handler with a Code Behind (.NET)</H2>
+	
+<P>The web system in .NET is designed to work with the <I>Page Controller</I> and <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A> patterns, although you can certainly decide to handle web events with a different approach. With this example, I'll take the preferred style of .NET, with the presentation layer built on top of a domain using <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A>, using data sets as the main carrier of information between the layers.
+	</P>
+	
+<P>For our example this time we'll have a page that displays runs scored and the run rate for one innings of a cricket match. As I know I'll have many readers who are afflicted with no material experience of this art form, I can summarize by saying that the runs scored is the score of batsman and the run rate is how many runs they score divided by the number of balls they face. The runs scored and balls faced are in the database, the run rate needs to be calculated by the application - a tiny but pedagogically useful piece of domain logic.
+	</P>	
+	
+<P>The handler in this design is an ASP.NET web page, captured in a <code>.aspx</code> file. As with other server page constructs, the aspx file allows you to embed programming logic directly into the page as scriptlets. Since you know I'd rather drink bad beer than write scriptlets, you know there's little chance that I'd want to do that. My savior in this case is the code behind mechanism that allows you to associate a regular file and class with the aspx page. You signal this in the header of the aspx page.
+	</P>
+	
+<pre> 
+&lt;%@ Page language="c#" Codebehind="bat.aspx.cs" AutoEventWireup="false" trace="False" Inherits="batsmen.BattingPage" %&gt;
+</pre>
+	
+<P>The page is setup as a subclass of the code behind class, and as such can use all the protected properties and methods of the code behind. The page object is the handler of the request, and the code behind can define how to handle the request by defining a <code>Page_Load</code> method. If most pages follow a common flow, I can define a <A href="layerSupertype.html" tppabs="http://martinfowler.com/isa/layerSupertype.html"><I>Layer Supertype</I></A> that has a <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612">template method</a> for this.
+	</P>
+	
+<pre>class CricketPage... 
+		protected void Page_Load(object sender, System.EventArgs e) {
+			db = new OleDbConnection(DB.ConnectionString);
+			if (hasMissingParameters()) 
+				errorTransfer (missingParameterMessage);
+			DataSet ds = getData();
+			if (hasNoData (ds))
+				errorTransfer ("No data matches your request");
+			applyDomainLogic (ds);
+			DataBind();
+			prepareUI(ds);
+		}
+</pre>
+	
+<P>The template method breaks the handling of the request down into a number of common steps. This way we can define a single common flow for handling web requests, while allowing each <I>Page Controller</I> to supply implementations for the specific steps. If you do this, you will find that once you've written a few <I>Page Controller</I>s, you will find what common flow to use for the template method. If any page needs to do something completely different, it can always override the page load method.
+	</P>
+	
+<P>The first task is to do validation on the parameters coming into the page. In a more realistic example this might do initial sanity checking of various form values, but in this case we are just decoding a URL of the form <code>http://localhost/batsmen/bat.aspx?team=England&amp;innings=2&amp;match=905</code>. The only validation in this example is that the various parameters required for the database query are present. As usual I've been overly simplistic in the error handling until somebody writes a good set of patterns on validation. So here the particular page defines a set of mandatory parameters and the <A href="layerSupertype.html" tppabs="http://martinfowler.com/isa/layerSupertype.html"><I>Layer Supertype</I></A> has the logic for checking them.
+	</P>
+	
+<pre>class CricketPage... 
+		abstract protected String[] mandatoryParameters();
+		private Boolean hasMissingParameters() {
+			foreach (String param in mandatoryParameters())
+				if (Request.Params[param] == null) return true;
+			return false;
+		}
+		private String missingParameterMessage {
+			get {
+				String result = "&lt;P&gt;This page is missing mandatory parameters:&lt;/P&gt;";
+				result += "&lt;UL&gt;";
+				foreach (String param in mandatoryParameters())
+					if (Request.Params[param] == null) 
+						result += String.Format("&lt;LI&gt;{0}&lt;/LI&gt;", param);
+				result += "&lt;/UL&gt;";
+				return result;
+			}
+		}
+		protected void errorTransfer (String message) {
+			Context.Items.Add("errorMessage", message);
+			Context.Server.Transfer("Error.aspx");
+		}
+</pre>
+	
+<pre>class BattingPage... 
+		override protected String[] mandatoryParameters() {
+			String[] result = {"team", "innings", "match"};
+			return result;
+		}
+</pre>
+	
+<P>The next stage is to pull the data out of the database into a ADO.NET's disconnected data set object. In this case this is a single query to the batting table.
+	</P>
+	
+<pre>class CricketPage... 
+		abstract protected DataSet getData();
+		protected Boolean hasNoData(DataSet ds) {
+			foreach (DataTable table in ds.Tables)
+				if (table.Rows.Count != 0) return false;
+			return true;
+		}
+</pre>
+	
+<pre>class BattingPage... 
+		override protected DataSet getData() {
+			OleDbCommand command = new OleDbCommand(SQL, db);
+			command.Parameters.Add(new OleDbParameter("team", team));
+			command.Parameters.Add(new OleDbParameter("innings", innings));
+			command.Parameters.Add(new OleDbParameter("match", match));
+			OleDbDataAdapter da = new OleDbDataAdapter(command);
+			DataSet result = new DataSet();
+			da.Fill(result, Batting.TABLE_NAME);
+			return result;
+		}
+		private const String SQL = 
+			@"SELECT * from batting 
+				WHERE team = ? AND innings = ? AND matchID = ?
+				ORDER BY battingOrder";
+
+
+</pre>
+	
+<P>Now the domain logic gets its turn to play. The domain logic is organized as a <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A>. The controller passes the retrieved data set to the <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> to process.
+	</P>
+	
+<pre>class CricketPage... 
+		protected virtual void applyDomainLogic (DataSet ds) {}
+</pre>
+	
+<pre>class BattingPage... 
+		override protected void  applyDomainLogic (DataSet dataSet) {
+			batting = new Batting(dataSet);
+			batting.CalculateRates();
+		}
+</pre>
+	
+<P>At this point the controller part of the page hander is done. By this I mean that in classic <A href="mvc.html" tppabs="http://martinfowler.com/isa/mvc.html"><I>Model View Controller</I></A> terms the controller should now hand over to the view to do display. In this design the <code>BattingPage</code> acts as both the controller and the view and the last call to <code>prepareUI</code> is part of the view behavior, so I can say farewell to this example in this pattern. However I suspect you'll find this to lack a certain dramatic closure, so you can find the example continued in <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A>.
+	</P>
+	
+	
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

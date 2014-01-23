@@ -1,0 +1,79 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Implicit Lock</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Implicit Lock</H1>
+<HR>
+
+<P>
+<I>by David Rice</I>
+</P>
+
+<P align="center">
+<I>Allow framework or layer supertype code to acquire offline locks.</I>
+</P>
+ 
+<P align="center">
+<img src="ImplicitLockSketch.gif" tppabs="http://martinfowler.com/isa/ImplicitLockSketch.gif"></P>
+													   
+
+	
+<P>Key to any locking scheme is that there are no gaps in its use.  A developer's forgetting to write a single line of code that acquires a lock can render an entire offline locking scheme useless.  Failing to retrieve a read lock where other transactions use write locks means you might not get up-to-date session data.  Failing to use a version count properly can result in unknowingly writing over someone's changes.  Generally, if an item might be locked <I>anywhere</I> it must be locked <I>everywhere</I>.  Ignoring its application's locking strategy allows a business transaction to create inconsistent data.  Not releasing locks will not corrupt your record data but will eventually bring productivity to a halt.  As offline concurrency management is a difficult concept to test such errors might go undetected by all of your test suites.</P>
+	
+	
+<P>One solution is to not allow developers to make such a mistake.  Locking tasks that cannot be overlooked should be handled implicitly by the application rather than explicitly by developers.  The fact that most enterprise applications make use of some combination of framework, <A href="layerSupertype.html" tppabs="http://martinfowler.com/isa/layerSupertype.html"><I>Layer Supertype</I></A>, and code generation provides us with ample opportunity to facilitate <I>Implicit Lock</I>.</P>		
+
+
+<H2>How it Works</H2>	
+	
+<P>Implementing <I>Implicit Lock</I> is a matter of factoring your code such that any locking mechanics that absolutely cannot be skipped can be carried out by your application framework.  For lack of a better word we'll use the word framework to mean any combination of <A href="layerSupertype.html" tppabs="http://martinfowler.com/isa/layerSupertype.html"><I>Layer Supertype</I></A>, framework classes, and any other 'plumbing' code.  Code generation tools are another avenue to enforce proper use of a locking strategy.  OK, this is by no means a ground-breaking idea.  You are very likely to head down this path once you have coded the same locking mechanics a few times over for in your application.  But we have seen it done poorly often enough that it merits a quick look.</P> 
+	
+	
+<P>The first step is to assemble a list of what tasks are mandatory for a business transaction to work within your locking strategy.  For <A href="optimistic.html" tppabs="http://martinfowler.com/isa/optimistic.html"><I>Optimistic Offline Lock</I></A> the list will include items such as storing a version count for each record, including the version in update SQL criteria, and storing an incremented version when changing the record.  The <A href="pessimistic.html" tppabs="http://martinfowler.com/isa/pessimistic.html"><I>Pessimistic Offline Lock</I></A> list will include items along the lines of acquiring any lock necessary to load a piece of data, typically the exclusive read lock or the read portion of the read/write lock, and the release of all locks when the business transaction or session completes.</P>
+	
+	
+<P>Note that the <A href="pessimistic.html" tppabs="http://martinfowler.com/isa/pessimistic.html"><I>Pessimistic Offline Lock</I></A> list did not include acquiring any lock only necessary for editing a piece of data.  This is the exclusive write lock and the write portion of the read/write lock.  Yes, this is indeed mandatory should your business transaction wish to edit the data.  However, implicitly acquiring these locks would present a couple of difficulties.  First, the only points where we might implicitly acquire a write lock, such as the registration of a dirty object within a <A href="unitOfWork.html" tppabs="http://martinfowler.com/isa/unitOfWork.html"><I>Unit of Work</I></A>, offer us no promise that the transaction will abort as soon as the user begins to work should the locks be unavailable.  The application cannot figure out on its own when is a good time to acquire these locks.  A transaction not failing rapidly conflicts with an intent of <A href="pessimistic.html" tppabs="http://martinfowler.com/isa/pessimistic.html"><I>Pessimistic Offline Lock</I></A>:  that a user not have to perform work twice.  Second, and just as important, is that these are the types of locks that most greatly limit the system's concurrency.  Avoiding <I>Implicit Lock</I> here helps us think about how we are impacting concurrency by forcing the issue out of the technical arena and into the business domain.  But still we must enforce that locks necessary for writing are acquired before changes are committed.  What your framework can do is assure that a write lock has already been obtained before committing any changes.  Not having acquired the lock by commit time is a programmer error and the code should at least throw an assertion failure.  We'd advise skipping the assertion and throwing a concurrency exception here as you really don't want any such errors in your production system when assertions are turned off.</P>
+	
+	
+<P>A word of caution with using the <I>Implicit Lock</I>.  While <I>Implicit Lock</I> allows developers to ignore a large part of locking mechanics it does not allow them to ignore consequences.  For example, if using <I>Implicit Lock</I> with a pessimistic locking scheme that waits for locks the developers still need to think about deadlock possibilities.  The danger with <I>Implicit Lock</I> is that business transactions can fail in unexpected fashion once developers stop thinking about locking.</P>
+	
+	
+<P>Making it work is a matter of determining the best way to get your framework to implicitly carry out locking mechanics.  Please see <A href="optimistic.html" tppabs="http://martinfowler.com/isa/optimistic.html"><I>Optimistic Offline Lock</I></A> for samples of implicit handling of that lock type.  Below is an example of an implicit <A href="pessimistic.html" tppabs="http://martinfowler.com/isa/pessimistic.html"><I>Pessimistic Offline Lock</I></A>.  The possibilities for a quality <I>Implicit Lock</I> implementation are far too numerous to demonstrate here.</P>  
+	
+
+
+<H2>When to Use it</H2>
+	
+<P>
+<I>Implicit Lock</I> should be used except in the simplest of applications that have no concept of framework.  The risk of a single forgotten lock is too great.</P>
+
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

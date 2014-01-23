@@ -1,0 +1,91 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Client Session State</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Client Session State</H1>
+<HR>
+
+<P align="center">
+<I>Store session state on the client</I>
+</P>
+
+<H2>How it Works</H2>
+	
+<P>Even the most server-oriented designs need at least a little <I>Client Session State</I>, if only to hold a session identifier. For some applications you can consider putting all of the session data on the client. In this case the client sends the full set of session data with each request, and the server sends back the full session state with each response. This allows the server to be completely stateless.
+	</P>
+	
+<P>Most of the time you'll want to use <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A> to handle the data transfer. The <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A> can serialize itself over the wire and thus allow even complex data to be transmitted.
+	</P>
+	
+<P>The client also needs to store the data. If our client is a rich client application - it can do this within its own structures. These could be the fields in the rich client interface - although I  would drink Budweiser rather than do that. A set of non-visual objects often makes a better bet. This could be the <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A> itself, or a domain model. Either way it's not usually a big problem. 
+	</P>
+	
+<P>If we have a HTML interface then things get a bit more complicated. There are three common ways to do it: URL parameters, hidden fields, and cookies.
+	</P>
+	
+<P>
+<B>URL Parameters </B>are the easiest to work with for a small amount of data. Essentially it means that all the URLs on any response page add the session state as parameters to the URL. The clear limit to doing this is that the size of an URL is limited. However if you only have a couple of data items this works well, so it's a popular choice for something like a session id. Some platforms will do automatic URL rewriting to add a session id.  Changing the URL may be a problem with bookmarks, so that's an argument against using it for consumer sites. 
+	</P>
+	
+<P>A <B>hidden field</B> is a field sent to the browser that isn't displayed on the web page. You get it by using a tag of the form &lt;INPUT type = "hidden"&gt;. To make hidden fields work you serialize your session state into the hidden field when you make a response and read it back in again on each request. You'll need to make a format for putting the data in the hidden field. XML is an obvious standard choice, but of course is rather wordy. You can also encode the data into some text based encoding scheme. Remember that a hidden field is only hidden from the displayed page, anyone can look at the data by looking at the page source. 
+	</P>
+	
+<P>Beware if you have a mixed site that has some older or fixed web pages. You can lose all the session data if you navigate to these pages. 
+	</P>
+	
+<P>The last, and sometimes controversial choice, is <B>cookies</B>. Cookies are sent back and forth automatically. Just like a hidden field you can use them by serializing the session state into the cookie. You are limited in size to how big the cookie can be. Another issue is that many people don't like cookies, as a result they turn them off. If they turn them off then your site will stop working. More and more sites are dependent on cookies now, so that will happen less often, and certainly isn't a problem for a purely in-house system. Cookies also are no more secure than anything else, so assume prying of all kinds can happen.
+	</P>
+	
+<P>Cookies also only work within a single domain name, so if your site is separated into different domain names the cookies won't travel between them.
+	</P>
+	
+<P>Some platforms can detect whether cookies are enabled, and if not they can use URL rewriting. This can make it very easy for very small amounts of data.
+	</P>
+	
+
+
+<H2>When to Use it</H2>
+	
+<P>
+<I>Client Session State</I> contains a number of advantages. In particular it reacts well in supporting stateless server objects with maximal clustering and fail-over resiliency. Of course if the client fails, all is lost; but often the user would expect that anyway.
+	</P>
+	
+<P>The arguments against <I>Client Session State</I> vary exponentially with the amount of data involved. With just a few fields, everything works nicely. With large amounts of data then the issues of where to store the data, and the time cost of transferring everything with every request start becoming prohibitive. This is especially true if your stars include an http client.
+	</P>
+	
+<P>There's also the security issue. Any data sent to the client is vulnerable to being looked at and altered. Encryption is the only way to stop this, but encrypting and decrypting with each request will add some performance burden. Without encryption you have to be sure you aren't sending anything you would rather hide from prying eyes. Fingers can pry too, so don't assume that what got sent out is the same as what gets sent back. Any data coming back will need to be completely revalidated. 
+	</P>
+	
+<P>You'll almost always have to use <I>Client Session State</I> for session identification. Fortunately this should be just one number, which won't burden any of the above schemes. You should still be concerned about session stealing, which is what happens when a malicious user changes his session id to see if he can snag someone elses session. 
+	</P>
+	
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Database Session State</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Database Session State</H1>
+<HR>
+
+<P align="center">
+<I>Store session date as committed data in the database.</I>
+</P>
+
+<H2>How it Works</H2>
+	
+<P>When a call occurs from the client to the server, the server object will first pulls  the data required for the request from the database. The server object then does the work it needs to do and saves all the data required back to the database.
+	</P>
+	
+<P>In order to pull information from the database, the server object will need some information about the session - requiring at least a session ID number to be stored on the client. Usually, however, this information is nothing more than the appropriate set of keys that's needed to find the appropriate amount of data in the database.
+	</P>
+	
+<P>The data that's involved will typically involve a mix of session data, that's only local to the current interaction, and committed data that's relevant to all interactions.
+	</P>
+	
+<P>One of the key issues to consider here is how to deal with the fact that session data is usually considered local to the session and shouldn't affect other parts of the system until the session as a whole is committed. So if you are working on an order in a session and you want to save it's intermediate state to the database, you usually need to handle it differently to an order that is confirmed at the end of a session. This is because that often, you don't want pending orders to appear in queries that are run against the database for such things as book availability, revenue that day, and the like.
+	</P>
+	
+<P>So how do you separate the session data? One route is to simply add a field to each database row that may have session data.The simplest form of this is to just have a boolean field <code>isPending</code>. However a better way is to store a session id in this field. This makes it much easier to find all the data for a particular session. All queries that want only record data now need to be modified with a clause <code>sessionID is not NULL</code>, or use a view that filters out that data.
+	</P>
+	
+<P>Using a session ID field ends up being a very invasive solution because all applications that touch the record database need to know about the meaning of the field to avoid getting session data. Views will sometimes do the trick and remove the invasiveness, but they often impose other costs of their own.
+	</P>
+	
+<P>A second alternative is to use a separate set of pending tables. So if you have an orders and an order lines tables in your database, you would add tables for pending orders and pending order lines. While session data is pending you save it to the pending table and when it becomes record data you save it to the real tables. This removes much of the invasiveness problem, but you'll need to add the appropriate table selection logic to your database mapping code, which will certainly add some complications.
+	</P>
+	
+<P>Often the record data will have integrity rules that aren't really true for pending data. In this case the pending tables allow you to not have the rules when you don't want them, but to enforce them when you do. Validation rules also will typically not be applied when saving pending data. You may face different validation rules depending on where you are in the session - but this will typically appear in server object logic.
+	</P>
+	
+<P>If you use pending tables, they should be pretty much exact clones of the real tables. That way you can keep your mapping logic as similar as possible. So use the same field names between the two tables. However do add a session id field to the pending tables so that you can easily find all the data for a session.
+	</P>
+	
+<P>You'll need a mechanism to clean out the session data if a session is cancelled or abandoned. Using a session ID makes this very straightforward as you can find all data with that session ID and delete it. If users abandon the session without telling you, you'll need some kind of timeout mechanism. A daemon that runs every few minutes can look for old session data. This implies a table in the database that keeps a track of the time of the last interaction with the session.
+	</P>
+	
+<P>Rollback is made much more complicated by updates. If you update an existing order in a session that allows a rollback of the whole session, how do you perform the rollback? One option is to not allow cancellation of a session like this. Any updates to existing record data become part of the record data at the end of the request. This is simple and often fits the users' view of the world. The alternative is awkward whether you use pending fields or pending tables. Pending tables can be easier as you can copy all the data that may be modified into pending tables, modify it there, and commit it back to the record tables at the end of the session. You can do a similar approach with a pending field, but only if the session ID becomes part of the key so that you can keep the old and new IDs in the same table at the same time - which can get very messy.
+	</P>
+	
+<P>If you are going to use separate pending tables that are only read by objects that handle a session, then there may be little point in tabularizing the data. Then it's better to use a <A href="serializedLob.html" tppabs="http://martinfowler.com/isa/serializedLob.html"><I>Serialized LOB</I></A>. At this point we've crossed the boundary into a <A href="statefulSession.html" tppabs="http://martinfowler.com/isa/statefulSession.html"><I>Server Session State</I></A>
+	
+</P>
+
+	
+<P>You can avoid all of the hassles of pending data by not having any. If you design your system so that all data is considered to be record data, then you avoid all issues of pending data. This isn't always possible, of course, and sometimes it's done in such an awkward way that the designers would be better off with thinking about explicit pending data. But if you have the option it makes <I>Database Session State</I> a lot easier to work with.
+	</P>
+
+
+<H2>When to Use it</H2>
+	
+<P>
+<I>Database Session State</I> is one alternative to handling session state and should be compared with <A href="statefulSession.html" tppabs="http://martinfowler.com/isa/statefulSession.html"><I>Server Session State</I></A> and <A href="clientSessionState.html" tppabs="http://martinfowler.com/isa/clientSessionState.html"><I>Client Session State</I></A>.
+	</P>
+	
+<P>The first aspect to consider with this pattern is performance. You'll gain by allowing yourself to use stateless objects on the server, thus enabling pooling and easy clustering. However the cost you'll pay is the time to pull the data in and out of the database with each request. You can reduce this cost by caching the server object. This will save you having to read the data out of the database whenever the cache is hit. You'll still pay the write costs.
+	</P>
+	
+<P>The second main issue is that programming effort, most of which centers around handling session state. If you have no session state and are able to save all your data as record data in each request - then this pattern is an obvious choice as you lose nothing in either effort or performance (if you cache your server objects).
+	</P>
+	
+<P>In a choice between <I>Database Session State</I> and <A href="statefulSession.html" tppabs="http://martinfowler.com/isa/statefulSession.html"><I>Server Session State</I></A> the biggest issue may be in how easy it is to support clustering and fail over with <A href="statefulSession.html" tppabs="http://martinfowler.com/isa/statefulSession.html"><I>Server Session State</I></A> in your particular application server. Getting clustering and fail over to work with <I>Database Session State</I> is usually more straightforward, at least with the regular solutions.
+	</P>
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

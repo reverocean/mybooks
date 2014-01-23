@@ -1,0 +1,251 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Query Object</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Query Object</H1>
+<HR>
+
+<P align="center">
+<I>An object that represents a database query</I>
+</P>
+
+<P align="center">
+<img src="queryObjectSketch.gif" tppabs="http://martinfowler.com/isa/queryObjectSketch.gif"></P>
+
+	
+<P>SQL can be an involved language, and many developers are not particularly familiar with it. Furthermore to form queries, you need to know what the database schema looks like. You can avoid this by creating specialized finder methods that hide the SQL inside parameterized methods, but that makes it difficult to form more ad hoc queries. It also leads to duplication in the SQL statements, should the database schema change.
+	</P>	
+	
+<P>A <I>Query Object</I> is an <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612">interpreter</a> that is a structure of objects, but is able to form itself into a SQL query. You can create this query by referring to classes and their fields, rather than tables and columns. That way those who write the queries can do so independently of the database schema and changes to the schema can localized into a single place.
+	</P>	
+
+
+<H2>How it Works</H2>
+	
+<P>A <I>Query Object</I> is an application of the <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612">interpreter</a> geared to represent a SQL query. The primary roles of the <I>Query Object</I> is to allow a client to form queries of various kinds, and then to turn that object structure into the appropriate SQL string.
+	</P>
+	
+<P>In order to represent any query, you need quite a flexible <I>Query Object</I>. Often, however, applications can make do with a lot less than the full power of SQL, in which case you build a simpler <I>Query Object</I>. While it won't be able to represent anything, it can satisfy your particular needs and if you need to enhance it, it's usually no more work to enhance when you need more capability than it is to create a fully capable <I>Query Object</I> right from the beginning. As a result you should only create a minimally functional <I>Query Object</I> for your current needs, and evolve it as your needs grow.
+	</P>
+	
+<P>A common feature of <I>Query Object</I> is that they can represent queries in the language of the in-memory objects rather than the database schema. So instead of using table and column names, you can use object and field names. While this isn't important if your objects and database have the same structure, it can be very useful if you get variations between the two. In order to perform this change of view, the <I>Query Object</I> needs to know how the database structure maps to the object structure, so this capability really needs <A href="metadataMapping.html" tppabs="http://martinfowler.com/isa/metadataMapping.html"><I>Metadata Mapping</I></A>.
+	</P>
+	
+<P>If you have multiple databases to work with, you can design your <I>Query Object</I> so that it can produce different SQL depending on which database the query is running against. At it's simplest level, this can take into account the annoying differences in SQL syntax that keep cropping up. At a more ambitious level this can use different mappings to cope with the same classes being stored in different database schemas. 
+	</P>
+	
+<P>A particularly sophisticated use of <I>Query Object</I> is using it to eliminate redundant queries against a database. At its simplest level you can look to see if you have run the same query earlier on in the session. If so then you can use the query to select objects from the <A href="identityMap.html" tppabs="http://martinfowler.com/isa/identityMap.html"><I>Identity Map</I></A> and avoid a trip to the database. A more sophisticated approach can detect whether one query is a particular case of an earlier query, such as a query that is the same as an earlier one but with an additional clause linked with an AND. 
+	</P>
+	
+<P>Exactly how to do these more sophisticated features is beyond the scope of this book. But these are the kind of features that OR mapping tools may provide.
+	</P>
+	
+<P>A variation on the <I>Query Object</I> that Cocobase does, is to allow a query to be specified by an example domain object. So you might have a Person object whose last name is set to "Fowler" but all other attributes are set to null. You can then treat this domain object as a query by example that's processed in a similar way to the interpreter style <I>Query Object</I>, that would return all people in the database whose last name is "Fowler".
+	</P>	
+
+
+<H2>When to Use it</H2>
+	
+<P>
+<I>Query Object</I>s are a pretty sophisticated pattern to put together, so most projects don't use them if they have a hand built data source layer. You only really need them when you are using <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> and <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A>, you also really need <A href="metadataMapping.html" tppabs="http://martinfowler.com/isa/metadataMapping.html"><I>Metadata Mapping</I></A> to make real use of them.
+	</P>
+	
+<P>Even then they aren't always necessary. Many developers are comfortable with SQL. You can hide much of the details of the database schema behind specific finder methods. 
+	</P>
+	
+<P>The advantages of <I>Query Object</I> come with more sophisticated needs: keeping database schema encapsulated, supporting multiple databases, supporting multiple schemas, and optimizing to avoid multiple queries. Although some projects with a particularly sophisticated data source team might want to build these themselves, most people that use <I>Query Object</I> do so with a commercial tool. My inclination is that if you want these capabilities, you almost always better off buying a tool.
+	</P>
+	
+<P>Having said all that, you may find that limited <I>Query Object</I> may fulfill your needs and not be that difficult to build on a project that wouldn't justify a fully featured <I>Query Object</I>. The trick to this is paring down the functionality of the <I>Query Object</I> and being determined to not build more than you actually use.
+	</P>
+	
+
+
+	
+<H2>Example: A simple <I>Query Object</I> (Java)</H2>
+	
+<P>This is a simple example of a <I>Query Object</I>, rather less than would be useful for most situations, but enough to give you and idea of what a <I>Query Object</I> is about.
+	</P>
+	
+<P>This <I>Query Object</I> is able to query a single table based on set of criteria that and'ed together, (or in slightly more technical language it handles a conjunction of elementary predicates.)
+	</P>
+	
+<P>The <I>Query Object</I> is set up using the language of domain objects rather than that of the table structure. So a query knows the class the query is for and a collection of criteria that'll correspond to the clauses of a where clause.
+	</P>
+	
+<pre>class QueryObject... 
+	private Class klass;
+	private List criteria = new ArrayList();
+</pre>
+	
+<P>A simple form of criteria is one that takes a field, a value, and a SQL operator to compare them.
+	</P>
+	
+<pre>class Criteria... 
+	private String sqlOperator;
+	protected String field;
+	protected Object value;
+</pre>
+	
+<P>To make it easier to create the right criteria, I can provide an appropriate creation method.
+	</P>
+	
+<pre>class Criteria... 
+	public static Criteria greaterThan(String fieldName, int value)  {
+		return Criteria.greaterThan(fieldName, new Integer(value));
+	}
+	public static Criteria greaterThan(String fieldName, Object value)  {
+		return new Criteria(" &gt; ", fieldName, value);
+	}
+	private Criteria(String sql, String field, Object value) {
+		this.sqlOperator = sql;
+		this.field = field;
+		this.value = value;
+	}
+</pre>
+	
+<P>This allows me to find everyone with dependents by forming a query such as
+	</P>
+	
+<pre>class Criteria... 
+	public static Criteria greaterThan(String fieldName, int value)  {
+		return Criteria.greaterThan(fieldName, new Integer(value));
+	}
+	public static Criteria greaterThan(String fieldName, Object value)  {
+		return new Criteria(" &gt; ", fieldName, value);
+	}
+	private Criteria(String sql, String field, Object value) {
+		this.sqlOperator = sql;
+		this.field = field;
+		this.value = value;
+	}
+</pre>
+	
+<P>So if I have a person object such as this
+	</P>
+	
+<pre>class Person... 
+	private String lastName;
+	private String firstName;
+	private int numberOfDependents;
+</pre>
+	
+<P>I can form a query that asks for all people with dependents by creating a query for person and adding a criteria
+	</P>
+	
+<pre> 
+		QueryObject query = new QueryObject(Person.class);
+		query.addCriteria(Criteria.greaterThan("numberOfDependents", 0));
+</pre>
+	
+<P>That's enough for to describe the query, the query then needs to execute by turning itself into a SQL select. In this case I assume my mapper class supports a method that will find objects based on a string which is a where clause. 
+	</P>
+	
+<pre>class QueryObject... 
+	public Set execute(UnitOfWork uow) {
+		this.uow = uow;
+		return uow.getMapper(klass).findObjectsWhere(generateWhereClause());
+	}
+</pre>
+	
+<pre>class Mapper... 
+	public Set findObjectsWhere (String whereClause) {
+		String sql = "SELECT" + dataMap.columnList() + " FROM " + dataMap.getTableName() + " WHERE " + whereClause;
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		Set result = new HashSet();
+		try {
+			stmt = DB.prepare(sql);
+			rs = stmt.executeQuery();
+			result = loadAll(rs);
+		} catch (Exception e) {
+			throw new ApplicationException (e);
+		} finally {DB.cleanUp(stmt, rs);
+		}
+        return result;
+
+	}
+</pre>	
+	
+<P>Here I'm using a <A href="unitOfWork.html" tppabs="http://martinfowler.com/isa/unitOfWork.html"><I>Unit of Work</I></A> that holds mappers indexed by the class and a mapper that uses <A href="metadataMapping.html" tppabs="http://martinfowler.com/isa/metadataMapping.html"><I>Metadata Mapping</I></A>
+	
+</P>
+	
+<P>To generate the where clause, the query iterates through the criteria and gets each one to print itself out and tied them together with ANDs
+	</P>
+	
+<pre>class QueryObject... 
+	private String generateWhereClause() {
+		StringBuffer result = new StringBuffer();
+		for (Iterator it = criteria.iterator(); it.hasNext();) {
+			Criteria c = (Criteria)it.next();
+			if (result.length() != 0)
+				result.append(" AND ");
+			result.append(c.generateSql(uow.getMapper(klass).getDataMap()));
+		}
+		return result.toString();
+	}
+</pre>
+	
+<pre>class Criteria... 
+	public String generateSql(DataMap dataMap) {
+	   return dataMap.getColumnForField(field) + sqlOperator + value;
+	}
+</pre>
+	
+<P>As well as criteria with simple SQL operators, we can create more complex criteria classes that do a little more. So consider a case insensitive pattern match query, such as finding all people whose last names start with 'f'. We can form a query object for all people with dependents whose name starts with 'f'.
+	</P>
+	
+<pre> 
+		QueryObject query = new QueryObject(Person.class);
+		query.addCriteria(Criteria.greaterThan("numberOfDependents", 0));
+		query.addCriteria(Criteria.matches("lastName", "f%"));
+</pre>
+	
+<P>This uses a different criteria class that forms a more complex clause into the where statement.
+	</P>
+	
+<pre>class Criteria... 
+	public static Criteria matches(String fieldName, String pattern){
+	    return new MatchCriteria(fieldName, pattern);
+	}
+</pre>
+	
+<pre>class MatchCriteria extends Criteria... 
+	public String generateSql(DataMap dataMap) {
+		return  "UPPER(" + dataMap.getColumnForField(field) + ") LIKE UPPER('" + value + "')";
+	}
+</pre>
+	
+			
+	
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

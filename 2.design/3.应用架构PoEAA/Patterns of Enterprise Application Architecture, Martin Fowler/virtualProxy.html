@@ -1,0 +1,305 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Lazy Load</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Lazy Load</H1>
+<HR>
+
+<P align="center">
+<I>An object that doesn't contain all of the data you need, but knows how to get it.</I>
+</P>
+
+<P align="center">	
+<pre>class Supplier... 
+	public List getProducts() {
+		if (products == null) products = Product.findForSupplier(getID());
+		return products;
+	}
+</pre>
+</P>
+
+	
+<P>As you load data from a database into memory it's handy to design things so that as you load an object of interest, you also load the objects that are related to that object. This makes loading easier on the developer using the object, who otherwise has to explicitly load all the objects they need themselves.
+	</P>
+	
+<P>However if you take this to its logical conclusion, you reach the point where loading one object can have the effect of loading a huge amount of other related objects into the system, something that hurts performance when only a few of the objects are actually needed.
+	</P>	
+	
+<P>A <I>Lazy Load</I> interrupts this loading process for the moment, leaving a marker in the object structure so that if the data is needed it can be loaded only then. As many people know, if you're lazy about doing things you'll win when it turns out you don't need to do them at all.
+	</P>
+	
+
+
+<H2>How it Works</H2>
+	
+<P>There are four main ways you can implement <I>Lazy Load</I>: lazy initialization, virtual proxy, value holder, and ghost.
+	</P>
+	
+	
+<P>
+<B>Lazy initialization</B><a href="">[Beck-patterns]</a> is the simplest one to do. The basic idea is that every access to the field checks first to see if it's null. If it's null it calculates the value of the field before returning the field. To make this work you have to ensure that the field is self-encapsulated; meaning that all access to the field, even from within the class, is done through a getting method. 
+	</P>
+	
+<P>Using a null to signal a field that hasn't been loaded yet works well, unless null is a legal value for the field. In this case you either need something else to signal the field hasn't been loaded, or to use a <A href="specialCase.html" tppabs="http://martinfowler.com/isa/specialCase.html"><I>Special Case</I></A> for the null value.
+	</P>
+	
+	
+<P>Using lazy initialization is simple, but it does tend to force a dependency between the object concerned and the database so it works best for <A href="activeRecord.html" tppabs="http://martinfowler.com/isa/activeRecord.html"><I>Active Record</I></A>, <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html"><I>Table Data Gateway</I></A>, and <A href="rowDataGateway.html" tppabs="http://martinfowler.com/isa/rowDataGateway.html"><I>Row Data Gateway</I></A>. If you're using <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A> you'll need an additional layer of indirection. You can obtain this by using a <B>virtual proxy</B><a href="http://www.amazon.com/exec/obidos/ASIN/0201633612">[Gang of Four]</a>. A virtual proxy is an object that looks like the object that should be in the field, but actually doesn't contain anything. Only when one of it's methods is called does it load the correct object from the database.
+	</P>
+	
+<P>The good thing about a virtual proxy is that looks exactly like the object that's supposed to be there. However it isn't so you can easily run into a nasty identity problem. Often the virtual proxy is a different object to the real object. Furthermore you can have more than one virtual proxy for the same real object. All of these will have different object identities, yet they represent the same conceptual object. At the very least you have to override the equality method and remember to use it instead of an identity method. But without that, and discipline, you'll run into some very hard to track bugs.
+	</P>
+	
+<P>In some environments the other problem with a virtual proxy is that you end up having to create lots of them, one for each class you are proxying. You can usually avoid this in dynamically typed languages, but with static type languages things usually get messy. Even when the platform provides handy facilities, such as Java's proxies, they introduce other inconveniences.
+	</P>
+	
+	
+<P>These problem don't hit you if you only use virtual proxies for collections classes, such as lists. Since collections are <A href="valueObject.html" tppabs="http://martinfowler.com/isa/valueObject.html"><I>Value Object</I></A>s , their identity doesn't matter. Additionally you only have a few collection classes to write virtual collections for.
+	</P>
+	
+	
+<P>With domain classes you can avoid these problems by using a <B>value holder</B>. The value holder concept, which I first came across in Smalltalk, is an object that wraps some other object. To get the underlying object you ask the value holder for its value. Only on the first access does it pull the data from the database. The disadvantages of the value holder is that the class needs to know there is a value holder present, and you lose the explicitness of strong typing. You can avoid identity problems by ensuring that the value holder is never passed out beyond its owning class.
+	</P>
+	
+<P>A <B>ghost</B> is the real object, but not in its full state. When you load the object from the database it contains just its ID. Whenever you try to access a field it loads its full state from the database. You can think of a ghost as an object where every field is lazy initialized in one fell swoop, or as a virtual proxy where the object is its own virtual proxy. Of course there's no need to load all the data in one go, you may group the data into groups that are commonly used together. If you use a ghost you can put it immediately in its <A href="identityMap.html" tppabs="http://martinfowler.com/isa/identityMap.html"><I>Identity Map</I></A>. By doing this not just will you maintain identity, you'll also avoid all problems due to cyclic references when reading in data.
+	</P>
+	
+<P>When you use a virtual proxy or a ghost the proxy/ghost doesn't need to be completely devoid of data. If you have some data which is quick to get hold of and commonly used, it may make sense to load this data when you load the proxy or ghost. (This is sometimes referred to as a "light object".) 
+	</P>
+	
+<P>Inheritance often poses a problem with <I>Lazy Load</I>. If you're going to use ghosts, you'll need to know what type of ghost to create, which you often can't tell without loading the thing properly. Virtual proxies can suffer from the same problem in static typed languages.
+	</P>
+	
+<P>One danger with <I>Lazy Load</I> is that it can easily cause more database accesses then you need. A good example of this <B>ripple loading</B> is if you fill a collection with <I>Lazy Load</I>s and then look at them one at a time. This will cause you to go to the database once for each object, instead of reading them all in at once. I've seen ripple loading cripple the performance of an application. One way to avoid ripple loading is not to have a collection of <I>Lazy Load</I>s, rather make the collection itself a <I>Lazy Load</I> and when you load it load all the contents. The limitation of this tactic is when the collection is very large, such as all the IP addresses in the world. In practice these aren't usually linked up through associations in the object model, so that doesn't happen very often. When it does you'll need a Value List Handler <font color="#FF0000">[missing reference]</font>.
+	</P>
+	
+	
+<P>
+<I>Lazy Load</I> is a good candidate for aspect-oriented programming. You can put the <I>Lazy Load</I> behavior into a separate aspect, which allows you change the lazy load strategy separately as well as freeing the domain developers from having to deal with lazy load issues. I've also seen a project post-process Java bytecode to implement <I>Lazy Load</I> in a transparent way.
+	</P>	
+	
+<P>Often you'll run into situations where different use cases work best with a different variety of laziness. Some use cases need one subset of the object graph, others use a different subset. For maximum efficiency you want to load the right sub-graph for the right use case.
+	</P>
+	
+<P>The way to deal with this is to have separate database interaction objects for the different use cases. So if you use <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A> you may have two order mapper objects, one that loads the line items immediately, and one that loads the line items lazily. The application code chooses the appropriate mapper depending on the use case. A variation on this is to have the same basic loader object, but defer to a strategy object to decide the loading pattern. It's a bit more sophisticated but can be a better way to factor the behavior.
+	</P>
+	
+<P>In theory, you might want a range of different degrees of laziness, but in practice you really only need two: a complete load and enough of a load for identification purposes in a list. Adding more usually adds more complexity than is worth while.
+	</P>
+	
+
+
+<H2>When to Use it</H2>
+	
+<P>Deciding when to use <I>Lazy Load</I> is all about deciding how much you want to pull back from the database as you load an object, and how many database calls it will require. It's pointless to use <I>Lazy Load</I> on a field that's stored in the same row as the rest of the object, because it doesn't cost any more to bring back extra data in a call, even if the data field is quite large: such as a <A href="serializedLob.html" tppabs="http://martinfowler.com/isa/serializedLob.html"><I>Serialized LOB</I></A>. So it's only worth considering <I>Lazy Load</I> if the field requires an extra database call to access.
+	</P>
+	
+<P>In performance terms it's then about deciding when you want to take the hit of bringing back the data. Often it's a good idea to bring everything you'll need in one call so you have it in place, particularly if it corresponds to a single interaction with a UI. The best time to use <I>Lazy Load</I> is when not just does it involve an extra call, it's also data that often isn't used when the main object is used.
+	</P>
+	
+<P>Adding <I>Lazy Load</I> does add a little complexity to the program. So my preference is to not use <I>Lazy Load</I> unless I actively think I'll need it.
+	</P>
+	
+
+
+	
+<H2>Example: Lazy Initialization (Java)</H2>
+	
+<P>The essence of lazy initialization is code like this.
+	</P>
+	
+<pre>class Supplier... 
+	public List getProducts() {
+		if (products == null) products = Product.findForSupplier(getID());
+		return products;
+	}
+</pre>	
+	
+<P>In this way the first access of the products field causes the data to be loaded from the database.
+	</P>
+	
+
+
+	
+<H2>Example: Virtual Proxy (Java)</H2>
+	
+<P>The key to the virtual proxy is to provide a class that looks like the actual class you would normally use, but actually holds a simple wrapper around the real class. So a list of products for a supplier would be held with a regular list field.
+	</P>
+	
+<pre>class SupplierVL... 
+	private List products;
+</pre>	
+	
+	
+<P>The most complicated thing about producing a list proxy like this is setting it up so that you can provide an underlying list that's only created when it's accessed. To do this we have to pass the code that's needed to create the list into the virtual list when it's instantiated.
+	</P>
+	
+<P>The best way to do this in Java is to define an interface for the loading behavior.
+	</P>
+	
+<pre> 
+
+public interface VirtualListLoader {
+	List load();
+}
+
+</pre>	
+	
+<P>Then we can instantiate the virtual list with a loader that calls the appropriate mapper method.
+	</P>
+	
+<pre>class SupplierMapper... 
+	public static class ProductLoader implements VirtualListLoader {
+		private Long id;
+
+		public ProductLoader(Long id) {
+			this.id = id;
+		}
+
+		public List load() {
+			return ProductMapper.create().findForSupplier(id);
+		}
+	}
+</pre>	
+	
+<P>During the load method we assign the product loader to the list field
+	</P>
+	
+<pre>class SupplierMapper... 
+	protected DomainObject doLoad(Long id, ResultSet rs) throws SQLException {
+		String nameArg = rs.getString(2);
+		SupplierVL result = new SupplierVL(id, nameArg);
+		result.setProducts(new VirtualList(new ProductLoader(id)));
+		return result;
+	}
+</pre>		
+	
+<P>The virtual list's source list is self encapsulated and evaluates the loader on first reference
+	</P>
+	
+<pre>class VirtualList... 
+	private List source;
+	private VirtualListLoader loader;
+
+	public VirtualList(VirtualListLoader loader) {
+		this.loader = loader;
+	}
+
+	private List getSource() {
+		if (source == null) source = loader.load();
+		return source;
+	}
+</pre>	
+	
+	
+<P>I then implement  the regular list methods to delegate to the source list.
+	</P>
+	
+<pre>class VirtualList... 
+	public int size() {
+		return getSource().size();
+	}
+
+	public boolean isEmpty() {
+		return getSource().isEmpty();
+	}
+
+	//	... and so on for rest of list methods
+</pre>	
+	
+<P>This way the domain class knows nothing about how the mapper class does the <I>Lazy Load</I>. Indeed the domain class isn't even aware that there is a <I>Lazy Load</I>.
+	</P>
+	
+
+
+	
+<H2>Example: Using a Value Holder (Java)</H2>
+	
+<P>A value holder can be used as a generic <I>Lazy Load</I>. In this case the domain type is aware that something is afoot, since the product field is typed as a value holder. This fact can be hidden from clients of the supplier by the getting method.
+	</P>
+	
+<pre>class SupplierVH... 
+	private ValueHolder products;
+
+	public List getProducts() {
+		return (List) products.getValue();
+	}
+</pre>	
+	
+<P>The value holder itself does the <I>Lazy Load</I> behavior. It needs to be passed the necessary code to load it's value when it's accessed. We can do this by defining a loader interface.
+	</P>
+	
+<pre>class ValueHolder... 
+	private Object value;
+	private ValueLoader loader;
+
+	public ValueHolder(ValueLoader loader) {
+		this.loader = loader;
+	}
+
+	public Object getValue() {
+		if (value == null) value = loader.load();
+		return value;
+	}
+</pre>	
+	
+<pre> 
+
+public interface ValueLoader {
+	Object load();
+}
+
+</pre>	
+	
+<P>A mapper can set up the value holder by creating an implementation of the loader and putting it into the supplier object
+	</P>
+	
+<pre>class SupplierMapper... 
+	protected DomainObject doLoad(Long id, ResultSet rs) throws SQLException {
+		String nameArg = rs.getString(2);
+		SupplierVH result = new SupplierVH(id, nameArg);
+		result.setProducts(new ValueHolder(new ProductLoader(id)));
+		return result;
+	}
+
+	public static class ProductLoader implements ValueLoader {
+		private Long id;
+
+		public ProductLoader(Long id) {
+			this.id = id;
+		}
+
+		public Object load() {
+			return ProductMapper.create().findForSupplier(id);
+		}
+	}
+</pre>		
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

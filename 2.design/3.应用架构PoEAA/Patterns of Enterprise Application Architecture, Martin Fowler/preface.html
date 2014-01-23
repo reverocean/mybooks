@@ -1,0 +1,158 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Preface</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/" ><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/" >Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html" >Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html" >Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html" >Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo" >Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/" >ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Preface</H1>
+<HR>
+
+<P>In the spring of 1999 I flew to Chicago to consult on a project being done by ThoughtWorks, a small but rapidly growing application development company. The project was one of those ambitious enterprise application projects: a back-end leasing system. Essentially what this system does is to deal with everything that happens to a lease after you've signed on the dotted line. It has to deal with sending out bills, handling someone upgrading one of the assets on the lease, chasing people who don't pay their bills on time, and figuring out what happens when someone returns the assets early. That doesn't sound too bad until you realize that leasing agreements are infinitely varied and horrendously complicated. The business "logic" rarely fits any logical pattern, because after all its written by business people to capture business, where odd small variations can make all the difference in winning a deal. Each of those little victories is yet more complexity to the system.
+</P>
+
+<P>That's the kind of thing that gets me excited. How to take all that complexity and come up with system of objects that can make more tractable. Developing a good <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> for this is difficult, but wonderfully satisfying. 
+</P>
+
+<P>Yet that's not the end of the problem. Such a domain model has to persisted to a database, and like many projects we were using a relational database.  We also had to connect this model to a user interface, provide support to allow remote applications to use our software, and integrate our software with third party packages. All of this on a new technology called J2EE which nobody in the world had any real experience in using.
+</P>
+
+<P>Even though this technology was new, we did have the benefit of experience. I'd been doing this kind of thing for ages now with C++, Smalltalk, and CORBA. Many of the ThoughtWorkers had a lot of experience with Forte. We already had the key architectural ideas in our heads, we just had to figure out how to apply them to J2EE. Looking back on it three years later the design is not perfect, but it's stood the test of time pretty damn well. 
+</P>
+
+<P>That's the kind of situation that is where this book comes in. Over the years I've seen many enterprise application projects. These projects often contain similar design ideas which have proven to be effective ways to deal with the inevitable complexity that enterprise applications possess. This book is a starting point to capture these design ideas as patterns.
+</P>
+
+<P>The book is organized in two parts. The first part is a set of narrative chapters on a number of important  topics in the design of enterprise applications. They introduce various problems in the architecture of enterprise applications and their solutions. However the narrative chapters don't go into much detail on these solutions. The details of the solutions are in the second part, organized as patterns. These patterns are a reference and I don't expect you to read them cover to cover. My intention is that you can read the narrative chapters in part one  from start to finish to get a broad picture of what the book covers, then you can dip into the patterns chapters of part two as your interest and needs drive you. So this book is a short narrative book and a longer reference book combined into one. </P>
+
+<P>This is a book on enterprise application design. Enterprise applications are about the display, manipulation and storage of large amounts of often complex data. Examples include reservation systems, financial systems, supply chain systems, and many of the systems that run modern business. Enterprise applications have their own particular challenges and solutions. They are a different animal to embedded systems, control systems, telecoms, or desktop productivity software. So if you work in of these other fields, there's nothing really in this book for you (unless you want to get a feel for what enterprise applications are like.) For a general book on software architecture I'd recommend <a href="http://www.amazon.com/exec/obidos/ASIN/0471958697" >[POSA]</a>.
+</P>
+
+<P>There are many architectural issues in building enterprise applications. I'm afraid this book isn't a comprehensive guide to them. In building software I'm a great believer in iterative development. At the heart of iterative development is the notion that you should deliver software as soon as you have something useful to the user, even if it's not complete. Although there are many differences between writing a book and writing software, this notion is one that I think the two share. So this book is an incomplete but (I trust) useful compendium of advice on enterprise application architecture. The primary topics I talk about are:
+</P>
+
+<UL>
+<LI style="">layering of enterprise applications</LI>
+<LI style="">how to structure domain (business) logic</LI>
+<LI style="">the structure of a web user interface</LI>
+<LI style="">how to link in-memory modules (particularly objects) to a relational database</LI>
+<LI style="">how to handle session state in stateless environments</LI>
+<LI style="">some principles of distribution</LI>
+</UL>
+
+
+
+
+
+
+<P>The list of things I don't talk about is rather longer. I really fancied writing about organizing validation, incorporating messaging and asynchronous communication, security, error handling, clustering, architectural refactoring, structuring rich-client user interfaces, amongst others.  I can only hope to see some patterns appear for this work in the near future. However due to space, time, and lack of cogitation you won't find them in this book. Perhaps I'll do a second volume someday and get into these topics, or maybe someone else will fill these, and other, gaps. 
+</P>
+
+<P>Of these dealing with message based communication is a particularly big issue. Increasingly people who are integrating multiple applications are making use of asynchronous message based communication approaches. There's much to said for using them within an application as well.
+</P>
+
+<P>This book is not intended to be specific for any particular software platform. I first came across these patterns while working with Smalltalk, C++, and CORBA in the late 80's and early 90's. In the late 90's I started to do extensive work in Java and found these patterns applied well both to early Java/CORBA systems and later J2EE based work. More recently I've been doing some initial work with Microsoft's .NET platform and find the patterns apply again. My ThoughtWorks colleagues have also introduced their experiences, particularly with Forte. I can't claim generality across all platforms that ever have been or will be used for enterprise applications, but so far these patterns have shown enough recurrence to be useful.
+</P>
+
+<P>I have provided code examples for most of these patterns. My choice of language for the code examples is based on what I think most readers are likely to be able to read and understand. Java's a good choice here. Anyone who can read C or C++ can read Java, yet Java is much less complex than C++. Essentially most C++ programmers can read Java but not vice versa. I'm an object bigot, so inevitably lean to an OO language. As a result most of the code examples are in Java. As I was working on the book Microsoft started stabilizing their .NET environment, and their C# language has most of the same properties as Java for an author. So I did some of the code examples in C# as well, although that does introduce some risk since developers don't have much experience with .NET yet and so the idioms for using it well are less mature. Both are C-based languages so if you can read one you should be able to read both, even if you aren't deeply into that language or platform. My aim was to use a language that the largest amount of software developers can read,  even if it's not their primary or preferred language. (My apologies to those who like Smalltalk, Delphi, Visual Basic, Perl, Python, Ruby, COBOL or any other language. I know you think you know a better language than Java or C#, all I can say is I do too!)
+</P>
+
+
+<a name="N43"></a>
+
+<H2>Who this book is for</H2>
+	
+<P>I've written this book for programmers, designers, and architects who are building enterprise applications and who want to either improve their understanding of these architectural issues or improve their communication about them.  
+	</P>
+	
+<P>I'm assuming that most of my readers will fall into two groups: either those with modest needs who are looking to build their own software to handle these issues, or readers with more demanding needs who will be using a tool. For those of modest needs, my intention is that these patters should get you started. In many areas you'll need more than the patterns will give you, but my intention is to provide more of a head start in this field than I got. For tool users I hope this book will be useful to give you some idea of what's happening under the hood, but also help you in making choices between which of the tool supported patterns to use. Using, say,  an object-relational mapping tool still means you have to make decisions about how to map certain situations. Reading the patterns should give you some guidance in making the choices.
+	</P>
+	
+<P>There is a third category, those with demanding needs who want to build their own software for these problems. The first thing I'd say here is look carefully at using tools. I've seen more than one project get sucked into a long exercise at building frameworks which weren't what project was really about. If you're still convinced, go ahead. Remember in this case that many of the code examples in this book are deliberately simplified to help understanding, and you'll find you'll need to do a lot tweaking to handle the greater demands that you'll face.
+	</P>
+	
+<P>Since patterns are common solutions to recurring problems, there's a good chance that you'll have already come across some of them. If you've been working in enterprise applications for a while, you may well know most of them. I'm not claiming to have anything new in this book. Indeed I claim the opposite - this is a book of (for our industry) old ideas. If you're new to this field I hope you'll like this book to help you learn about these techniques. If you're more familiar with the techniques I hope you'll like this book because it helps you communicate and teach these ideas to others. An important part of patterns is trying to build a common vocabulary, so you can say that this class is a <A href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html"><I>Remote Facade</I></A> and other designers know what you mean.
+	</P>
+
+
+<a name="N58"></a>
+
+<H2>Acknowledgements</H2>
+	
+<P>As with any book, what's written here has a great deal to do with the many people that have worked with me in various ways over the years. Lots of people have helped me in lots of ways. Often I don't recall important things that people have said that go into this book. But in this section I can acknowledge those contributions I do remember.
+	</P>
+	
+<P>I'll start with my contributors: David Rice and Matt Foemmel, colleagues of mine at ThoughtWorks. Not just have they given me many good ideas that are key to this book, they have also contributed some chapters and examples to the content. Their direct and recent project experience adds a great deal to those sections.
+	</P>
+	
+<P>I could almost list the ThoughtWorks telephone directory here, for so many of my colleagues have helped this project by talking over their designs and experiences with me. Many patterns formed in my mind by having the opportunity to the many talented designers that we have, so I have little choice but to thank the whole company.
+	</P>
+	
+<P>Kyle Brown, Rachel Reinitz, and Bobby Woolf have gone out of their way to have long and detailed review sessions with me in North Carolina. Their fine tooth-comb has injected all sorts of wisdom, not including this particularly heinous mixed metaphor. In particular I've enjoyed several long telephone calls with Kyle that contributed more than I can list.
+	</P>
+	
+<P>As usual I owe more than I can say to my first class panel of official reviewers:
+	</P>
+	
+<UL>
+<LI style="">John Brewer</LI>
+<LI style="">John Crupi</LI>
+<LI style="">Alan Knight</LI>
+<LI style="">Rob Mee</LI>
+<LI style="">Gerard Meszarios</LI>
+<LI style="">David Siegel</LI>
+<LI style="">Kai Yu</LI>
+</UL>	
+		
+	
+	
+	
+	
+	
+	
+<P>Early in 2000 I prepared a talk for Java One with Alan Knight and Kai Yu which was the earliest genesis of this material. As well as thanking them for their help in that, I should also thank Josh Mackenzie, Rebecca Parsons, and Dave Rice for their help refining these talks, and the ideas,  later on. Jim Newkirk did a great deal in helping me get used to the new world of .NET.
+	</P>
+	
+<P>As I was writing this book, I put drafts on the web. During this time many people sent me emails pointing out problems, asking questions, or talking about alternatives. These people include (in rough order of hearing from them) Ivan Mitrovic, Bjorn Beskow, Daniel Drasin, Eric Kaun, Thomas Neumann, Peter Gassmann, Russell Freeman, Brad Wiemerslage, John Coakley, Mark Bernstein, Chester Chen, Christian Heller, Jesper Ladegaard, Kyle Hermenean, Don Dwiggins, Knut Wannheden, Akira Hirasawa, Volker Termath, Christopher Thames, Bryan Boreham, Michael Yoon, Tobin Harris, Kirk Knoernschild, Matthew Roberts, Joel Rieder, Jeremy Miller, Russel Healey, Pascal Costanza, Paul Campbell, Bob Corrick, Graham Berrisford, Trevor Pinkney, Peris Brodsky, Volker Turau, Dan Green, Ken Rosha, Michael Banks, Paolo Marino, Jason Gorman. 
+	</P>
+	
+<P>There are many others who've given input whose names I either never knew or can't remember, but my thanks is no less heartfelt.
+	</P>
+	
+<P>An important part of my sanity for the code examples in this book was being able to easily run automated tests. Although I'm sure there are errors which got past them, they certainly caught plenty. So I'd like to thank Kent Beck and Erich Gamma for writing JUnit (junit.org), and Philip Craig for his work on NUnit (nunit.sourceforge.net).
+	</P>
+
+
+<a name="N8E"></a>
+
+<H2>Colophon</H2>
+	
+<P>This was the first book that I've written using XML and related technologies. The master text was written as XML documents using trusty TextPad. I used a home grown DTD. While I was working I used XSLT to generate the web pages for the web site. For the diagrams I relied on my old friend Visio using Pavel Hruby's wonderful UML templates (much better than those that come with the tool, I have a link on my web site if you want them.) I wrote a small program that automatically imported the code examples into the output, this saved me from the usual nightmare of code cut and paste. For my first draft I tried XSL-FO with Apache FOP. It wasn't quite up to the job (yet) so for later work I wrote scripts in XSLT and Ruby to import the text into FrameMaker.
+	</P>
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/" ><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/" ><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/" >Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

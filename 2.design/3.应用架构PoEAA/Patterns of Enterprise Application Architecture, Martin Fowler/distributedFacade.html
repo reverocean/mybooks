@@ -1,0 +1,442 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Remote Facade</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Remote Facade</H1>
+<HR>
+
+<P align="center">
+<I>Provides a coarse grained facade on fine grained objects to improve efficiency over a network.</I>
+</P>
+
+<P align="center">
+<img src="distributedFacadeSketch.gif" tppabs="http://martinfowler.com/isa/distributedFacadeSketch.gif"></P>
+
+	
+<P>In an object-oriented model, you do best with small objects that have small methods. This gives you lots of opportunity for control and substitution of behavior, and to use good intention revealing naming to help an application be easier to understand. So if you have an address object you would store and retrieve  each piece of information individually. You have separate fields for the city, state, and zip code.  You have separate getting methods to get this data, and separate setting methods to update this information. This allows the class to control updates easily, deciding to do special validation on a zip or determining a city automatically if the address only has a zip code. Other behaviors, such as determining if two addresses are within a few miles of each other, are also done on a fine grained basis. This allows clients to clearly ask for exactly the information and behavior they want.
+	</P>
+	
+<P>One of the consequences of this fine grained behavior is that there is usually a lot of interaction between objects, and that interaction usually requires lots of method invocations. Within a single address space, this is no great issue. Method calls are cheap these days, and clever compilers and VMs can eliminate even this small cost. In the very few cases where it does make a difference, it's a small job to optimize.
+	</P>
+	
+<P>But this happy state does not exist when you make calls between processes. Remote calls are much more expensive because there is a lot more to do. Data may have to be marshaled, security may need to be checked, packets may need to be routed through switches. If the two processes are running on machines on opposite sides of the globe, the speed of light may be a factor. The brutal truth is that any inter-process call is orders of magnitude more expensive than an in-process call - even if both processes are on the same machine. Such a performance effect cannot be ignored, even for us believers in lazy optimization.
+	</P>
+	
+<P>As a result any object that's intended to be used as a remote object needs a coarse grained interface that minimizes the amount of calls needed to get something done. If you want to change the city, state, and zip of a remote address; you want to do this in one call. Not just does this affect your method calls, it also affects your objects. Rather than ask for an order and it's order lines individually, you need to access and update the order and order lines in a single call. This affects your entire object structure.
+	</P>
+	
+<P>This coarse grained interfaces come with a price. You give up the clear intention and fine-grained control that you get with small objects and small methods. Programming becomes more difficult and your productivity slows.
+	</P>
+	
+<P>You can't rely on clever middleware to solve your problem. I've seen many sellers of distributed objects say that you can  just take a regular object model and add CORBA (for instance) to make the whole thing distributed in a simple step.They point out that with their powerful software you only pay the price of a remote call if the call is actually remote. So you can program fine grained objects and only pay a performance cost should you actually use them remotely.
+	</P>
+	
+<P>Frankly, that doesn't wash. The point is that if you use a fine grained object remotely, it's performance will suck. If you use coarse-grained objects inside a process you lose productivity. There's no point taking a fine grained object and making it remotable just in case you want to call it remotely. Either it's a remote object or it isn't. The fundamental issue is that you need to have fine grained objects within a process and coarse grained objects between processes.
+	</P>
+	
+<P>A <I>Remote Facade</I> is a coarse-grained facade over a web of fine-grained objects. None of the fine-grained objects have a remote interface and the <I>Remote Facade</I> does not contain any domain logic.
+	</P>	
+
+
+<H2>How it Works</H2>
+	
+<P>
+<I>Remote Facade</I> tackles the distribution problem by the standard OO approach of separating distinct responsibilities into different objects, and as a result has become the standard pattern for this problem. Firstly I recognize that fine-grained objects are the right answer for complex logic - so I ensure that any complex logic is placed in fine-grained objects which are designed to collaborate within a single process. To allow them to be accessed efficiently remotely I make a separate facade object to act as a remote interface. The facade, as the name implies, is merely a thin skin that switches from a coarse grained to a fine grained interface.
+	</P>
+	
+<P>In a simple case, like an address object, a <I>Remote Facade</I> would replace all the getting and setting methods of the regular address object with one getter and one setter: often referred to as bulk accessors. When a client calls a bulk setting method, the address facade  reads the data from the setting method and calls the individual accessors on the real address object (see Figure <A href="#facadeSeveralCalls.gif">1</A>). The facade does nothing more than this. This way all the logic of validation and computation stays on the address object where it can  factored cleanly and  be used by other fine-grained objects.
+	</P>
+	
+<A name="facadeSeveralCalls.gif"></A><img align="top" src="facadeSeveralCalls.gif" tppabs="http://martinfowler.com/isa/facadeSeveralCalls.gif"><P>
+<I>Figure 1: One call to a facade causes several calls from the facade to the domain object</I>
+</P>
+	
+<P>In a more complex case a single <I>Remote Facade</I> may act as a remote gateway for many fine-grained object. An order facade may be used to get and update information for an order, all its order lines, and maybe even some customer data as well.
+	</P>
+	
+<P>In transferring information in bulk like this, you need to transfer this information in a form that can easily be moved over the wire. If your fine-grained classes are present on both sides of the connection, and these objects are serializable, then you can transfer the objects directly by making a copy. In this case a <code>getAddressData </code>
+	method would create a copy of the original address object. The <code>setAddressData</code> would receive an address object and use this address to update the data of the actual address object. (This assumes that the original address object needs to preserve its identity and thus can't be just replaced with the new address.)
+	</P>
+	
+<P>Often, however you can't do this. You may not want to duplicate your domain classes on multiple processes. Often it's difficult to serialize a segment of a domain model due to its complicated relationship structure. The client may not want the whole model, just a simplified subset of it. In these cases it makes sense to use a <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A> as the basis of the transfer.
+	</P>
+	
+<P>In the sketch, I've shown a <I>Remote Facade</I> that corresponds to a single domain object. While this is not uncommon and is easy to understand, it isn't the most usual case. A single <I>Remote Facade</I>would have a number of methods each designed to pass on information from several objects. So <code>getAddressData</code> and <code>setAddressData</code> would be methods defined on a class like <code>CustomerService</code> which would also have methods along the lines of <code>getPurchasingHistory</code> and <code>updateCreditData.</code>
+	
+</P>
+	
+<P>The question of granularity is one of the most tricky questions that comes up with <I>Remote Facade</I>. Some people like to make fairly small <I>Remote Facade</I>s, such as one per use case. I prefer a coarser grained structure with much fewer <I>Remote Facade</I>s. For even a moderate sized application I might have just a single <I>Remote Facade</I>. Even for a large application I may only have half a dozen <I>Remote Facade</I>s. This means that each <I>Remote Facade</I> has a lot of methods, but since these methods are small I don't see this as a problem.
+	</P>
+	
+	
+<P>You design a <I>Remote Facade</I> based on the needs of a particular client usage. The most common example would be the need to view and update information through a user interface. In this case you might have a single <I>Remote Facade</I> for a family of screens with one bulk accessor method for loading and saving the data for each screen. Pressing buttons on a screen, to change a order's status, would invoke command methods on the facade. Quite often you'll have different methods on the <I>Remote Facade</I> that do pretty much the same thing on the underlying objects. This is common and reasonable. The facade is designed to make life simpler for external users, not the internal system, so if the client process thinks of it as a different command, it is a different command - even if it all goes to the same internal command.
+	</P>
+	
+	
+<P>
+<I>Remote Facade</I> can be stateful or stateless. A stateless <I>Remote Facade</I> can be pooled, and this can improve resource usage and improve performance, especially in a B2C situation. However if the interaction involves state across a session, then it needs to store session state somewhere using <A href="clientSessionState.html" tppabs="http://martinfowler.com/isa/clientSessionState.html"><I>Client Session State</I></A> or <A href="databaseSessionState.html" tppabs="http://martinfowler.com/isa/databaseSessionState.html"><I>Database Session State</I></A> or a some implementation of <A href="statefulSession.html" tppabs="http://martinfowler.com/isa/statefulSession.html"><I>Server Session State</I></A>. A stateful <I>Remote Facade</I> can hold onto its own state, which makes for an easy implementation of <A href="statefulSession.html" tppabs="http://martinfowler.com/isa/statefulSession.html"><I>Server Session State</I></A>. This may lead to performance issues when you have thousands of simultaneous users.
+	</P>
+	
+	
+<P>As well as providing a coarse-grained interface, several other responsibilities naturally go to the <I>Remote Facade</I>. The methods of a <I>Remote Facade</I> are a natural point to apply security. An access control list can say which users can invoke calls on which methods of a <I>Remote Facade</I>. The <I>Remote Facade</I> methods also are a natural point to apply transactional control. A <I>Remote Facade</I> method can start a transaction, do all the internal work and then commit the transaction at the end. Each call makes a good transaction since you don't want a transaction open when return goes back to the client, since transactions aren't built to be efficient for such long running cases. 
+	</P>
+	
+
+
+<H2>When to Use it</H2>
+	
+<P>Use <I>Remote Facade</I> whenever you need remote access to a fine-grained object model. By using <I>Remote Facade</I> you gain the advantages of a coarse grained interface while still keeping the advantage of fine grained objects. This gives you the best of both worlds.
+	</P>
+	
+<P>The most common case of using this is between a presentation and a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> where they may run on different processes. You'll get this between a swing UI and server domain model, or with a servlet and a server object model if the application and web servers are different processes.
+	</P>
+	
+<P>If all your access is within a single process, then you don't need this kind of conversion. So I wouldn't use this pattern to communicate between a client <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>  and its presentation nor between a CGI script and <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>  that are running all in one web server. You don't tend to see <I>Remote Facade</I> used with a <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>, since a <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> is inherently a coarser grained structure.
+	</P>
+	
+<P>
+<I>Remote Facade</I>'s imply a synchronous, that is a remote procedure call style of distribution. Often you can greatly improve the responsiveness of an application by going with an asynchronous, message based style of remote communication. Indeed there are many compelling advantages for an asynchronous approach. Sadly discussion of asynchronous patterns is outside the scope of this book.
+	</P>
+	
+
+
+<H2>Further Reading</H2>
+	
+<P>
+<a href="http://www.amazon.com/exec/obidos/ASIN/0130648841">[Alur, Crupi, and Malks]</a> discusses Session Facade in detail in the context of J2EE. Also take a look at <a href="http://www7b.boulder.ibm.com/wsdd/library/techarticles/0106_brown/sessionfacades.html">Kyle Brown's Session Facade</a> paper.
+	</P>
+
+
+
+<H2>Example: Using a Java Session Bean as a <I>Remote Facade</I> (Java)</H2>
+	
+<P>If you are working with the Enterprise Java platform, then a good choice for a distributed facade is a session bean. Session beans are remote objects, they may be stateful or stateless. In this example I'll run a bunch of plain old Java objects inside an EJB container and access them remotely through a session bean that's designed as a <I>Remote Facade</I>. Session Bean's aren't particularly complicated, so this example should make sense even if you haven't done any work with them before.
+	</P>
+	
+<P>I feel the need for a couple of side notes here. Firstly I've been surprised by how many people seem to belive that you can't run plain objects inside an EJB container in Java. I hear the question "are the domain objects Entity Beans?". They can be entity beans (that's a separate question), but they don't have to be. Simple Java objects work just fine - as in this example. 
+	</P>
+	
+<P>My other side note is just to point out that this is not the only way to use a session bean. It can be used to host <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s. I'll look at that usage elsewhere, in this case I'm using it as a <I>Remote Facade</I>.
+	</P>
+	
+<P>In this example I'll look at remote interfaces to accessing information about music albums. The <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> consists of fine grained objects that represent an artist, and album, and tracks. Surrounding this are several other packages that provide the data sources for the application Figure <A href="#album-packages.gif">2</A>.
+	</P>	
+	
+<A name="album-packages.gif"></A><img align="top" src="album-packages.gif" tppabs="http://martinfowler.com/isa/album-packages.gif"><P>
+<I>Figure 2: Packages the remote interfaces</I>
+</P>
+	
+<P>The dto package contains <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>s that help us move data over the wire to the client. They have simple accessor behavior and also the ability to serialize themselves  in binary or XML textual formats. In the remote package are assembler objects that will move data between the domain objects and the <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>s. If you're interested in how this works see the discussion of <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>.
+	</P>
+	
+<P>To explain the facade I'll assume I can move data back and forth into <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>s and concentrate on the remote interfaces. A single logical Java session bean has three actual classes. Two of these make up the remote API (and in fact are Java interfaces) the other is the class that implements the API. The two interfaces are the AlbumService itself and the home object: AlbumHome. The home object is used by the naming service to get access to the distributed facade, that's a detail on EJB that I'll skip over here.Our interest is in the <I>Remote Facade</I> itself: which is AlbumService. It's interface is declared in the API package to be used by the client, and is just a list of methods.
+	</P>
+	
+<pre>class AlbumService... 
+	String play(String id) throws RemoteException;
+
+	String getAlbumXml(String id) throws RemoteException;
+
+	AlbumDTO getAlbum(String id) throws RemoteException;
+
+	void createAlbum(String id, String xml) throws RemoteException;
+
+	void createAlbum(String id, AlbumDTO dto) throws RemoteException;
+
+	void updateAlbum(String id, String xml) throws RemoteException;
+
+	void updateAlbum(String id, AlbumDTO dto) throws RemoteException;
+
+	void addArtistNamed(String id, String name) throws RemoteException;
+
+	void addArtist(String id, String xml) throws RemoteException;
+
+	void addArtist(String id, ArtistDTO dto) throws RemoteException;
+
+	ArtistDTO getArtist(String id) throws RemoteException;
+</pre>	
+	
+<P>You'll notice that even in this short example, I see methods for a two different classes in the <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>: artist and album. I also see minor variations on the same method. Methods have variants that use either the <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A> or an XML string to move data into the remote service. This allows the client to choose which form to use depending on the nature of the client and of the connection. As you can see, for even a small application this can lead to many methods on AlbumService.
+	</P>
+	
+<P>Fortunately the methods themselves are very simple. Here are the ones for manipulating albums.
+	</P>
+	
+<pre>class AlbumServiceBean... 
+	public AlbumDTO getAlbum(String id) throws RemoteException {
+			return new AlbumAssembler().writeDTO(Registry.findAlbum(id));
+	}
+
+	public String getAlbumXml(String id) throws RemoteException {
+			AlbumDTO dto = new AlbumAssembler().writeDTO(Registry.findAlbum(id));
+			return dto.toXmlString();
+	}
+
+	public void createAlbum(String id, AlbumDTO dto) throws RemoteException {
+			new AlbumAssembler().createAlbum(id, dto);
+	}
+
+	public void createAlbum(String id, String xml) throws RemoteException {
+			AlbumDTO dto = AlbumDTO.readXmlString(xml);
+			new AlbumAssembler().createAlbum(id, dto);
+	}
+
+	public void updateAlbum(String id, AlbumDTO dto) throws RemoteException {
+			new AlbumAssembler().updateAlbum(id, dto);
+	}
+
+	public void updateAlbum(String id, String xml) throws RemoteException {
+			AlbumDTO dto = AlbumDTO.readXmlString(xml);
+			new AlbumAssembler().updateAlbum(id, dto);
+	}
+
+</pre>	
+	
+<P>As you can see, each method really does nothing more than delegate to another object, so each method is only a line or two in length (ignoring the noise of the try/catch blocks). This small example illustrates pretty nicely what a distributed facade should look like: a long list of very short methods with very little logic in them. The facade then is nothing more than a packaging mechanism - which is as it should be.
+	</P>
+	
+<P>We'll just finish with a few words on testing. It's very useful to be able to do as much testing as possible in a single process. In this case I can do this by writing tests for the session bean implementation directly: these can be run without deploying to the EJB container. 
+	</P>
+	
+<pre>class XmlTester... 
+	private AlbumDTO kob;
+	private AlbumDTO newkob;
+	private AlbumServiceBean facade = new AlbumServiceBean();
+
+	protected void setUp() throws Exception {
+		facade.initializeForTesting();
+		kob = facade.getAlbum("kob");
+		Writer buffer = new StringWriter();
+		kob.toXmlString(buffer);
+		newkob = AlbumDTO.readXmlString(new StringReader(buffer.toString()));
+	}
+
+	public void testArtist() {
+		assertEquals(kob.getArtist(), newkob.getArtist());
+	}
+
+</pre>	
+	
+<P>This is one of the jUnit tests to be run in-memory. It shows how I can create an instance of the session bean outside the container and run tests on it. This allows for a faster testing turn-around time.
+	</P>
+
+
+	
+<H2>Example: Web Service (.NET)</H2>
+	
+<P>I was talking over this book with Mike Hendrickson, my editor at Addison-Wesley. Ever alert to the latest buzzwords, he asked me if I'd got anything about web services in it. I'm actually loath to rush to every fashion in these books, after due to the languid pace of book publishing any latest fashion that I write about will seem quaint by the time you read it. But it's a good example of how core patterns so often keep their value even with the latest technological flip-flops.
+	</P>
+	
+<P>At it's heart a web service is nothing more than an interface for remote usage. As such the basic advice of <I>Remote Facade</I> still holds: build your functionality in a fine-grained manner, and then layer a <I>Remote Facade</I> over the fine-grained model in order to handle web services.
+	</P>
+	
+<P>For the example, I'll the same basic problem as I described above, concentrating just on the request for information about a single album. Figure <A href="#webServiceAlbum.gif">3</A> shows the various classes that take part. They fall into the familiar groups: Album Service is the <I>Remote Facade</I>, two <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>s, three objects in a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> and an assembler to pull data from the <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> into the <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>s.
+	</P>
+	
+<A name="webServiceAlbum.gif"></A><img align="top" src="webServiceAlbum.gif" tppabs="http://martinfowler.com/isa/webServiceAlbum.gif"><P>
+<I>Figure 3: Classes for the album web service</I>
+</P>
+	
+<P>The <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> is absurdly simple, indeed for this kind of problem you'd be better off using a <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html"><I>Table Data Gateway</I></A> to create the <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>s directly - but that would rather spoil the example of showing a <I>Remote Facade</I> over a domain model.
+	</P>
+	
+<pre>class Album... 
+		public String Title;
+		public Artist Artist;
+		public IList Tracks {
+			get {return ArrayList.ReadOnly(tracksData);}
+		}
+		public void AddTrack (Track arg) {
+			tracksData.Add(arg);
+		}
+		public void RemoveTrack (Track arg) {
+			tracksData.Remove(arg);
+		}
+		private IList tracksData = new ArrayList();
+</pre>
+	
+<pre>class Artist... 
+		public String Name;
+</pre>
+	
+<pre>class Track... 
+		public String Title;
+		public IList Performers {
+			get {return ArrayList.ReadOnly(performersData);}
+		}
+		public void AddPerformer (Artist arg) {
+			performersData.Add(arg);
+		}
+		public void RemovePerformer (Artist arg) {
+			performersData.Remove(arg);
+		}
+		private IList performersData = new ArrayList();
+</pre>
+	
+<P>I use <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>s for passing the data over the wire. These are just data holders which flatten the structure for the purposes of the web service.
+	</P>
+	
+<pre>class AlbumDTO... 
+		public String Title;
+		public String Artist;
+		public TrackDTO[] Tracks;
+</pre>
+	
+<pre>class TrackDTO... 
+		public String Title;
+		public String[] Performers;
+</pre>
+	
+<P>Since this is .NET, I don't need to write any code to serialize and restore into XML. The .NET framework comes with the appropriate serializer class to do the job.
+	</P>
+	
+<P>Since this is a web service, I also need to declare the structure of the <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>s in WSDL. The Visual Studio tools will generate the WSDL for me, and I'm a lazy kind of guy, so I'll let it do that. Here's the XML Schema definition that corresponds to the <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>s.
+	</P>
+	
+<pre>
+	&lt;s:complexType name="AlbumDTO"&gt;
+		&lt;s:sequence&gt;
+  			&lt;s:element minOccurs="1" maxOccurs="1" name="Title" nillable="true" type="s:string" /&gt; 
+  			&lt;s:element minOccurs="1" maxOccurs="1" name="Artist" nillable="true" type="s:string" /&gt; 
+ 			 &lt;s:element minOccurs="1" maxOccurs="1" name="Tracks" nillable="true" type="s0:ArrayOfTrackDTO" /&gt; 
+  		&lt;/s:sequence&gt;
+  	&lt;/s:complexType&gt;
+	&lt;s:complexType name="ArrayOfTrackDTO"&gt;
+ 		&lt;s:sequence&gt;
+  			&lt;s:element minOccurs="0" maxOccurs="unbounded" name="TrackDTO" nillable="true" type="s0:TrackDTO" /&gt; 
+  		&lt;/s:sequence&gt;
+  	&lt;/s:complexType&gt;
+	&lt;s:complexType name="TrackDTO"&gt;
+ 		&lt;s:sequence&gt;
+  			&lt;s:element minOccurs="1" maxOccurs="1" name="Title" nillable="true" type="s:string" /&gt; 
+  			&lt;s:element minOccurs="1" maxOccurs="1" name="Performers" nillable="true" type="s0:ArrayOfString" /&gt; 
+  		&lt;/s:sequence&gt;
+  	&lt;/s:complexType&gt;
+ 	&lt;s:complexType name="ArrayOfString"&gt;
+ 		&lt;s:sequence&gt;
+  			&lt;s:element minOccurs="0" maxOccurs="unbounded" name="string" nillable="true" type="s:string" /&gt; 
+  		&lt;/s:sequence&gt;
+  	&lt;/s:complexType&gt;
+	</pre>
+	
+<P>Being XML, it's a particularly verbose form of data structure definition, but it does the job.
+	</P>
+	
+<P>To get the data from the <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> to the <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A> I need an assembler.
+	</P>
+	
+<pre>class AlbumAssembler... 
+		public AlbumDTO WriteDTO (Album subject) {
+			AlbumDTO result = new AlbumDTO();
+			result.Artist = subject.Artist.Name;
+			result.Title = subject.Title;
+			ArrayList trackList = new ArrayList();
+			foreach (Track t in subject.Tracks) 
+				trackList.Add (WriteTrack(t));
+			result.Tracks = (TrackDTO[]) trackList.ToArray(typeof(TrackDTO));
+			return result;
+		}
+		public TrackDTO WriteTrack (Track subject) {
+			TrackDTO result = new TrackDTO();
+			result.Title = subject.Title;
+			result.Performers = new String[subject.Performers.Count];
+			ArrayList performerList = new ArrayList();
+			foreach (Artist a in subject.Performers)
+				performerList.Add (a.Name);
+			result.Performers = (String[]) performerList.ToArray(typeof (String));
+			return result;
+		}
+</pre>
+	
+<P>The last piece we need is the service definition itself. This comes first from the C# class.
+	</P>
+	
+<pre>class AlbumService... 
+		[ WebMethod ]
+		public AlbumDTO GetAlbum(String key) {
+			Album result = new AlbumFinder()[key];
+			if (result == null) 
+				throw new SoapException ("unable to find album with key: " + 
+											key, SoapException.ClientFaultCode);
+			else return new AlbumAssembler().WriteDTO(result);
+		}
+</pre>
+	
+<P>Of course, this isn't the real interface definition - that comes from the WSDL file. Here are the relevant bits
+	</P>
+	
+<pre>
+&lt;portType name="AlbumServiceSoap"&gt;
+	&lt;operation name="GetAlbum"&gt;
+		&lt;input message="s0:GetAlbumSoapIn" /&gt; 
+		&lt;output message="s0:GetAlbumSoapOut" /&gt; 
+	 &lt;/operation&gt;
+&lt;/portType&gt;
+&lt;message name="GetAlbumSoapIn"&gt;
+	&lt;part name="parameters" element="s0:GetAlbum" /&gt; 
+&lt;/message&gt;
+&lt;message name="GetAlbumSoapOut"&gt;
+	&lt;part name="parameters" element="s0:GetAlbumResponse" /&gt; 
+&lt;/message&gt;
+&lt;s:element name="GetAlbum"&gt;
+	&lt;s:complexType&gt;
+		&lt;s:sequence&gt;
+			&lt;s:element minOccurs="1" maxOccurs="1" name="key" nillable="true" type="s:string" /&gt; 
+		&lt;/s:sequence&gt;
+	&lt;/s:complexType&gt;
+&lt;/s:element&gt;
+&lt;s:element name="GetAlbumResponse"&gt;
+	&lt;s:complexType&gt;
+		&lt;s:sequence&gt;
+  			&lt;s:element minOccurs="1" maxOccurs="1" name="GetAlbumResult" nillable="true" type="s0:AlbumDTO" /&gt; 
+  		&lt;/s:sequence&gt;
+  	&lt;/s:complexType&gt;
+&lt;/s:element&gt;
+	</pre>
+	
+<P>	As expected, WSDL is rather more garrulous than your average politician, but unlike so many of them - it does get the job done. I can now invoke the service by sending a SOAP message of the form
+	</P>
+	
+<pre>
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+	&lt;soap:Body&gt;
+		&lt;GetAlbum xmlns="http://martinfowler.com"&gt;
+			&lt;key&gt;aKeyString&lt;/key&gt;
+		&lt;/GetAlbum&gt;
+	&lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;
+	</pre>
+	
+<P>The important thing to remember about this example isn't the cool gyrations with SOAP and .NET, but the fundamental layering approach. Design an application without distribution, then layer the distribution ability on top of that with <I>Remote Facade</I>s and <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>s.
+	</P>
+	
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

@@ -1,0 +1,460 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Two Step View</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Two Step View</H1>
+<HR>
+
+<P align="center">
+<I>Turn domain data into HTML in two steps: first by forming some kind of logical page, then rendering the logical page into HTML.</I>
+</P>
+ 
+<P align="center">
+<img src="twoStageViewSketch.gif" tppabs="http://martinfowler.com/isa/twoStageViewSketch.gif">
+</P>
+
+
+	 
+<P>If you have a web application with many pages, you often want to have a consistent look and organization to the site. If every page looks different, you end up with a different look and feel that users find confusing. You may also want to make global changes to the appearance site easily.
+	</P>
+	
+<P>Common web site approaches using <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A> or <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A> make this difficult because presentation decisions are often duplicated across multiple pages or transform modules. A global change can force you to change several files.
+	</P>
+	
+<P>
+<I>Two Step View</I> deals with this problem by splitting the transformation into two stages. The first transforms the model data into a logical presentation without any specific formatting, and the second stage converts that logical presentation with the actual formatting needed. This way you can make a global change by altering the second stage, or support multiple output look and feels with one second stage each.
+	</P>
+
+
+<H2>How it Works</H2>
+	
+<P>The key to this pattern is to make the transformation to the HTML a two stage process. The first stage assembles the information that should be displayed in a logical screen structure that is suggestive of the display elements, yet does not contain any HTML. The second stage takes that presentation-oriented structure and renders it into HTML
+	</P>
+	
+<P>This intermediate form is a kind of logical screen. Its elements might include things like fields, headers, footers, tables, choices, and the like. As such it's certainly presentation-oriented and certainly constrains the screens to follow a definite style. You can think of the presentation-oriented model as one that defines the various kinds of widgets that you can have and the data the widgets contain, but does not specify what their appearance is in HTML.
+	</P>
+	
+<P>This presentation-oriented structure is assembled by specific code written for each screen. The first stage's responsibility is to access a domain-oriented model, either a database, a domain model, or a domain-oriented <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>, extract the relevant information for that screen, and then put that information into the presentation-oriented structure.
+	</P>
+	
+<P>The second stage is then turns this presentation-oriented structure into HTML. It knows about each element in the presentation-oriented structure and how to show that element as HTML. As such a system with many screens can be rendered to HTML by a single second stage - so all the HTML formatting decisions are made in one place. Of course the constraint is that the resulting screen must be derivable from the presentation-oriented structure.
+	</P>
+	
+<A name="twoStepRender.gif"></A><img align="top" src="twoStepRender.gif" tppabs="http://martinfowler.com/isa/twoStepRender.gif"><P>
+<I>Figure 1: Sample classes for two step rendering.</I>
+</P>
+	
+<P>There are several ways in which you can build a <I>Two Step View</I>. Perhaps the easiest to think about is using two step XSLT. A single step XSLT follows the approach in <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A>. Each page has a single XSLT stylesheet that transforms the domain oriented XML into HTML. The two step approach uses two XSLT stylesheets. The first stage transforms the domain-oriented XML into a presentation-oriented XML. The second stage stylesheet then renders that presentation-oriented XML into HTML.
+	</P>
+	
+<P>Another way is to use classes. Here you define the presentation-oriented structure as a set of classes, with a table class, a row class, etc. The first stage takes domain information and instantiates these presentation-oriented classes into a structure that models a logical screen. Then you render these classes into HTML, either by getting each presentation-oriented class to generate HTML for itself, or by having a separate HTML renderer class to do the job.
+	</P>
+	
+<A name="styledViewSeq.gif"></A><img align="top" src="styledViewSeq.gif" tppabs="http://martinfowler.com/isa/styledViewSeq.gif"><P>
+<I>Figure 2: Sequence diagram for two step rendering</I>
+</P>
+	
+<P>Both of the above approaches are based on <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A>. You can also do a <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A> based approach. To do this you need to pick templates that are based around the idea of a logical screen. For example you might have a template that looks like</P>
+	
+<pre>&lt;field label = "Name" value = "getName" /&gt;
+	</pre>
+	
+<P>
+	The template system then converts these logical tags to HTML. In such a scheme the page definition wouldn't include any HTML, it would include these logical screen tags - as a result it would probably be an XML document. Of course this has the disadvantage that you lose the ability to use wisiwig HTML editors.
+	</P>
+
+ 
+<H2>When to Use it</H2>
+	
+<P>The key value in <I>Two Step View</I> comes from the separation of first and second stages, allowing you to make global changes more easily. it helps to think of two situations: multi-appearence web application and single-appearence web application. Multi-appearence web apps are the rarer breed, but one that's growing. A multi-appearance web application is one where the same basic functionality is provided through multiple organizations, and each organization wants it's own distinct look to the application. A current example of this is airline travel sites where as you look at them you can tell from the page layout and design that they are all variations on one base travel site. I suspect many airlines would want that same functionality but with a distinctly different and individual appearance.
+	</P>
+	
+<P>The singe-appearance case is the more common one, where there's only one organization fronting the web app and they would like a consistent look throughout the site. That's the easiest case to consider first.
+	</P>
+	
+<P>With a single stage view (either a <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A> or a <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A> you build one view module per page of the web application. 
+	</P>
+	
+<A name="1stage-1appear.gif"></A><img align="top" src="1stage-1appear.gif" tppabs="http://martinfowler.com/isa/1stage-1appear.gif"><P>
+<I>Figure 3: Single stage view with one appearance</I>
+</P>
+	
+<P>With a <I>Two Step View</I> you have two stages to the view. You have one first stage module per page in the web application and only second stage module for the entire application. Your pay-off in using <I>Two Step View</I> is that any change you can make to the appearance of the site in the second stage is much easier to make, since one change in the second stage affects the entire site.
+	</P>
+
+	
+<A name="2stage-1appear.gif"></A><img align="top" src="2stage-1appear.gif" tppabs="http://martinfowler.com/isa/2stage-1appear.gif"><P>
+<I>Figure 4: Two stage view with one appearance</I>
+</P>
+
+	
+<P>With a multi-appearance app this advantage is compounded. You a single-stage view for each combination of screen and appearance. So ten screens and three appearances require 30 single stage view modules. Using <I>Two Step View</I>, however you can get away with ten first stages and three second-stages. The more screens and appearances you have, the bigger the saving.
+	</P>
+	
+<A name="1stage-2appear.gif"></A><img align="top" src="1stage-2appear.gif" tppabs="http://martinfowler.com/isa/1stage-2appear.gif"><P>
+<I>Figure 5: Single stage view with two appearances</I>
+</P>
+	
+<A name="2stage-2appear.gif"></A><img align="top" src="2stage-2appear.gif" tppabs="http://martinfowler.com/isa/2stage-2appear.gif"><P>
+<I>Figure 6: Two stage view with two appearances</I>
+</P>
+	
+<P>However your ability to pull this off is entirely dependent on how well you can make the presentation-oriented structure to really serve the needs of the appearance. A design heavy site, where each page is supposed to look different, won't work well with <I>Two Step View</I> because it's to find enough commonality between the screens to get a simple enough presentation-oriented structure. Essentially the design of the site is constrained by the presentation-oriented structure - for many sites that is too much of a limitation.
+	</P>
+	
+<P>Another limitation of <I>Two Step View</I> is the tools to use it. Tools are widely available for designers with no programming skills to lay out HTML pages using <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A>. <I>Two Step View</I> forces programmers to write the renderer and controller objects. Thus programmers have to be involved in any design change.
+	</P>
+	
+<P>It's also true that <I>Two Step View</I>, with its multiple layers, presents a harder programming model to learn, although once you are used to it it's no more difficult - and may help to reduce repetitive boilerplate code.
+	</P>
+ 
+
+
+	
+<H2>Example: Two Stage XSLT (XSLT)</H2>
+	
+<P>This approach to a <I>Two Step View</I> uses a two stage XLST transformation. The first stage transforms the domain specific XML into a logical screen XML, the second stage transforms the logical screen XML into HTML.
+	</P>
+	
+<P>The initial domain oriented XML looks like this:
+	</P>
+	
+<pre>
+			&lt;album&gt;
+				&lt;title&gt;Zero Hour&lt;/title&gt;
+				&lt;artist&gt;Astor Piazzola&lt;/artist&gt;
+				&lt;trackList&gt;
+					&lt;track&gt;&lt;title&gt;Tanguedia III&lt;/title&gt;&lt;time&gt;4:39&lt;/time&gt;&lt;/track&gt;
+					&lt;track&gt;&lt;title&gt;Milonga del Angel&lt;/title&gt;&lt;time&gt;6:30&lt;/time&gt;&lt;/track&gt;
+					&lt;track&gt;&lt;title&gt;Concierto Para Quinteto&lt;/title&gt;&lt;time&gt;9:00&lt;/time&gt;&lt;/track&gt;
+					&lt;track&gt;&lt;title&gt;Milonga Loca&lt;/title&gt;&lt;time&gt;3:05&lt;/time&gt;&lt;/track&gt;
+					&lt;track&gt;&lt;title&gt;Michelangelo '70&lt;/title&gt;&lt;time&gt;2:50&lt;/time&gt;&lt;/track&gt;
+					&lt;track&gt;&lt;title&gt;Contrabajisimo&lt;/title&gt;&lt;time&gt;10:18&lt;/time&gt;&lt;/track&gt;
+					&lt;track&gt;&lt;title&gt;Mumuki&lt;/title&gt;&lt;time&gt;9:32&lt;/time&gt;&lt;/track&gt;
+				&lt;/trackList&gt;
+			&lt;/album&gt;
+	</pre>
+	
+<P>The first stage XSLT processor transforms this into the following screen oriented XML.
+	</P>
+	
+<pre>
+		&lt;screen&gt;
+			&lt;title&gt;Zero Hour&lt;/title&gt;
+			&lt;field label="Artist"&gt;Astor Piazzola&lt;/field&gt;
+			&lt;table&gt;
+				&lt;row&gt;&lt;cell&gt;Tanguedia III&lt;/cell&gt;&lt;cell&gt;4:39&lt;/cell&gt;&lt;/row&gt;
+				&lt;row&gt;&lt;cell&gt;Milonga del Angel&lt;/cell&gt;&lt;cell&gt;6:30&lt;/cell&gt;&lt;/row&gt;
+				&lt;row&gt;&lt;cell&gt;Concierto Para Quinteto&lt;/cell&gt;&lt;cell&gt;9:00&lt;/cell&gt;&lt;/row&gt;
+				&lt;row&gt;&lt;cell&gt;Milonga Loca&lt;/cell&gt;&lt;cell&gt;3:05&lt;/cell&gt;&lt;/row&gt;
+				&lt;row&gt;&lt;cell&gt;Michelangelo '70&lt;/cell&gt;&lt;cell&gt;2:50&lt;/cell&gt;&lt;/row&gt;
+				&lt;row&gt;&lt;cell&gt;Contrabajisimo&lt;/cell&gt;&lt;cell&gt;10:18&lt;/cell&gt;&lt;/row&gt;
+				&lt;row&gt;&lt;cell&gt;Mumuki&lt;/cell&gt;&lt;cell&gt;9:32&lt;/cell&gt;&lt;/row&gt;
+			&lt;/table&gt;
+		&lt;/screen&gt;
+	</pre>
+	
+<P>To do this we need the following XSLT program.
+	</P>
+	
+<pre> 
+&lt;xsl:template match="album"&gt;
+	&lt;screen&gt;&lt;xsl:apply-templates/&gt;&lt;/screen&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="album/title"&gt;
+	&lt;title&gt;&lt;xsl:apply-templates/&gt;&lt;/title&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="artist"&gt;
+	&lt;field label="Artist"&gt;&lt;xsl:apply-templates/&gt;&lt;/field&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="trackList"&gt;
+	&lt;table&gt;&lt;xsl:apply-templates/&gt;&lt;/table&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="track"&gt;
+	&lt;row&gt;&lt;xsl:apply-templates/&gt;&lt;/row&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="track/title"&gt;
+	&lt;cell&gt;&lt;xsl:apply-templates/&gt;&lt;/cell&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="track/time"&gt;
+	&lt;cell&gt;&lt;xsl:apply-templates/&gt;&lt;/cell&gt;
+&lt;/xsl:template&gt;
+</pre>		
+	
+<P>The screen oriented XML is very plain. To turn it into HTML we use a second stage XSLT program.
+	</P>
+	
+<pre> 
+&lt;xsl:template match="screen"&gt;
+	&lt;HTML&gt;&lt;BODY bgcolor="white"&gt;
+	&lt;xsl:apply-templates/&gt;
+	&lt;/BODY&gt;&lt;/HTML&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="title"&gt;
+	&lt;h1&gt;&lt;xsl:apply-templates/&gt;&lt;/h1&gt;
+&lt;/xsl:template&gt;&lt;xsl:template match="field"&gt;
+	&lt;P&gt;&lt;B&gt;&lt;xsl:value-of select = "@label"/&gt;: &lt;/B&gt;&lt;xsl:apply-templates/&gt;&lt;/P&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="table"&gt;
+	&lt;table&gt;&lt;xsl:apply-templates/&gt;&lt;/table&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="table/row"&gt;
+	&lt;xsl:variable name="bgcolor"&gt;
+		&lt;xsl:choose&gt;
+			&lt;xsl:when test="(position() mod 2) = 1"&gt;linen&lt;/xsl:when&gt;
+			&lt;xsl:otherwise&gt;white&lt;/xsl:otherwise&gt;
+		&lt;/xsl:choose&gt;
+	&lt;/xsl:variable&gt;
+	&lt;tr bgcolor="{$bgcolor}"&gt;&lt;xsl:apply-templates/&gt;&lt;/tr&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="table/row/cell"&gt;
+	&lt;td&gt;&lt;xsl:apply-templates/&gt;&lt;/td&gt;
+&lt;/xsl:template&gt;
+</pre>	
+	
+<P>To assemble the two stages, I've used <A href="frontController.html" tppabs="http://martinfowler.com/isa/frontController.html"><I>Front Controller</I></A> to help separate the code that does the work.
+	</P>
+	
+<pre>class AlbumCommand... 
+	public void process() {
+		try {
+			Album album = Album.findNamed(request.getParameter("name"));
+			album = Album.findNamed("1234");
+			Assert.notNull(album);
+			PrintWriter out = response.getWriter();
+			XsltProcessor processor = new TwoStepXsltProcessor("album2.xsl", "second.xsl");
+			out.print(processor.getTransformation(album.toXmlDocument()));
+		} catch (Exception e) {
+			throw new ApplicationException(e);
+		}
+	}
+</pre>	
+
+	
+<P>It's useful to compare this to the single stage approach in <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A>. Consider changing the colors of the alternating rows. Using <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A> it would require editing every XSLT program. With <I>Two Step View</I> only the single second stage XSLT program needs to be changed. While it might be possible to use callable templates to do something similar, this will need a fair bit of XSLT gymnastics to pull off. The down side of <I>Two Step View</I> is that the final HTML is very much constrained by the screen oriented XML.
+	</P>	
+
+
+	
+<H2>Example: JSP and Custom Tags (Java)</H2>
+	
+<P>Although the XSLT route is conceptually the easiest way to think about implementing <I>Two Step View</I>, there are plenty of other ways to do it. For this example I'll use JSPs and custom tags, although they are both more awkward and less powerful than XSLT they do show how the pattern can manifest itself in different ways.
+	</P>
+	
+<P>The key rule of <I>Two Step View</I> is that the choosing of what to display and the HTML that displays it are utterly separated. For this example my first stage is handled by a JSP page and its helper, while a set of custom tags deals with the second stage.
+	</P>
+	
+<P>The interesting part of the first stage is the JSP page
+	</P>
+	
+<pre> 
+&lt;%@ taglib uri="2step.tld" prefix = "2step" %&gt;
+&lt;%@ page session="false"%&gt;
+
+&lt;jsp:useBean id="helper" class="actionController.AlbumConHelper"/&gt;
+&lt;%helper.init(request, response);%&gt;
+
+&lt;2step:screen&gt;
+&lt;2step:title&gt;&lt;jsp:getProperty name = "helper" property = "title"/&gt;&lt;/2step:title&gt;
+&lt;2step:field label = "Artist"&gt;&lt;jsp:getProperty name = "helper" property = "artist"/&gt;&lt;/2step:field&gt;
+&lt;2step:table host = "helper" collection = "trackList" columns = "title, time"/&gt;
+&lt;/2step:screen&gt;
+</pre>
+	
+<P>I'm using <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A> for the JSP page with a helper object, that much you can flick over to <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A> to read. For this discussion the important thing to do is look at the tags that are part of the "2step" name space. These are the tags that I'm using to invoke the second stage. Notice that there is no HTML on the JSP page, the only tags that are present are either the second stage tags, or bean manipulation tags to get values out of the helper.
+	</P>
+	
+<P>Each of the second stage tags has an implementation to pump out the necessary HTML for that logical screen element. The simplest of these is the title.
+	</P>
+	
+<pre>class TitleTag... 
+	public int doStartTag() throws JspException {
+		try {
+			pageContext.getOut().print("&lt;H1&gt;");
+		} catch (IOException e) {
+			throw new JspException("unable to print start");
+		}
+		return EVAL_BODY_INCLUDE;
+	}
+
+	public int doEndTag() throws JspException {
+		try {
+			pageContext.getOut().print("&lt;/H1&gt;");
+		} catch (IOException e) {
+			throw new JspException("unable to print end");
+		}
+		return EVAL_PAGE;
+	}
+</pre>
+	
+<P>For those that haven't indulged, a custom tag works by implementing hook methods that are called at the beginning and the end of the tagged text. So this tag simply wraps it's body content with an &lt;H1&gt; tag.
+	</P>
+	
+<P>A more complex tag, such as the field, can take an attribute. The attribute is tied into the tag class using a setting method
+	</P>
+	
+<pre>class FieldTag... 
+	private String label;
+
+	public void setLabel(String label) {
+		this.label = label;
+	}
+</pre>
+	
+<P>With the value set, you can then use it in the output.
+	</P>
+	
+<pre>class FieldTag... 
+	public int doStartTag() throws JspException {
+		try {
+			pageContext.getOut().print("&lt;P&gt;" + label + ": &lt;B&gt;");
+		} catch (IOException e) {
+			throw new JspException("unable to print start");
+		}
+		return EVAL_BODY_INCLUDE;
+	}
+
+	public int doEndTag() throws JspException {
+		try {
+			pageContext.getOut().print("&lt;/B&gt;&lt;/P&gt;");
+		} catch (IOException e) {
+			throw new JspException("how are checked exceptions helping me here?");
+		}
+		return EVAL_PAGE;
+	}
+</pre>
+	
+<P>The table tag is the most sophisticated of the tags. As well as allowing the JSP writer to choose which columns to put in the table, it also does highlighting of alternate rows. Similarly to my previous example, the highlighting is done by the second stage so that a system wide change can be done globally.
+	</P>
+	
+<P>The table tag takes attributes for the name of the collection property, the object on which the collection property sits, and a comma separated list of column names.
+	</P>
+	
+<pre>class TableTag... 
+	private String collectionName;
+	private String hostName;
+	private String columns;
+
+	public void setCollection(String collectionName) {
+		this.collectionName = collectionName;
+	}
+
+	public void setHost(String hostName) {
+		this.hostName = hostName;
+	}
+
+	public void setColumns(String columns) {
+		this.columns = columns;
+	}
+</pre>
+	
+<P>I made a helper method to get a property out of an object. There's a good argument for using the various classes that support Java beans, rather than just invoking a getSomething method, but this will do for the example.
+	</P>
+	
+<pre>class TableTag... 
+	private Object getProperty(Object obj, String property) throws JspException {
+		try {
+			String methodName = "get" + property.substring(0, 1).toUpperCase() + property.substring(1);
+			Object result = obj.getClass().getMethod(methodName, null).invoke(obj, null);
+			return result;
+		} catch (Exception e) {
+			throw new JspException("Unable to get property " + property + " from " + obj);
+		}
+	}
+</pre>
+	
+<P>This tag doesn't have a body. When it's called it pulls the named collection out of the request property and iterates through this collection to generate the rows of the table.
+	</P>
+	
+<pre>class TableTag... 
+	public int doStartTag() throws JspException {
+		try {
+			JspWriter out = pageContext.getOut();
+			out.print("&lt;table&gt;");
+			Collection coll = (Collection) getPropertyFromAttribute(hostName, collectionName);
+			Iterator rows = coll.iterator();
+			int rowNumber = 0;
+			while (rows.hasNext()) {
+				out.print("&lt;tr");
+				if ((rowNumber++ % 2) == 0) out.print(" bgcolor = " + HIGHLIGHT_COLOR);
+				out.print("&gt;");
+				printCells(rows.next());
+				out.print("&lt;/tr&gt;");
+			}
+			out.print("&lt;/table&gt;");
+		} catch (IOException e) {
+			throw new JspException("unable to print out");
+		}
+		return SKIP_BODY;
+	}
+
+	private Object getPropertyFromAttribute(String attribute, String property)
+			throws JspException
+	{
+		Object hostObject = pageContext.findAttribute(attribute);
+		if (hostObject == null)
+			throw new JspException("Attribute " + attribute + " not found.");
+		return getProperty(hostObject, property);
+	}
+
+	public static final String HIGHLIGHT_COLOR = "'linen'";
+</pre>
+	
+<P>During the iteration it sets every other row to the linen background to highlight them.
+	</P>
+	
+<P>To print the cells for each row, I use the column names as property values on the objects in the collection.
+	</P>
+	
+<pre>class TableTag... 
+	private void printCells(Object obj) throws IOException, JspException {
+		JspWriter out = pageContext.getOut();
+		for (int i = 0; i &lt; getColumnList().length; i++) {
+			out.print("&lt;td&gt;");
+			out.print(getProperty(obj, getColumnList()[i]));
+			out.print("&lt;/td&gt;");
+		}
+	}
+
+	private String[] getColumnList() {
+		StringTokenizer tk = new StringTokenizer(columns, ", ");
+		String[] result = new String[tk.countTokens()];
+		for (int i = 0; tk.hasMoreTokens(); i++)
+			result[i] = tk.nextToken();
+		return result;
+	}
+</pre>
+	
+<P>Compared to the XSLT implementation, one of the biggest differences is that this solution is rather less constraining on the uniformity of the site's layout. If an author of one page should want to slip some individual HTML into the page it's easier to do that. Of course while this allows tweaking of design intensive pages, it also is open to inappropriate use by people who are unfamiliar of the how the thing is to work. Sometimes constraints help prevent mistakes, that's a trade-off a team has to decide for themselves. 
+	</P>
+	
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

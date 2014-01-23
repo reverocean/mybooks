@@ -1,0 +1,167 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Identity Map</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Identity Map</H1>
+<HR>
+
+<P align="center">
+<I>Ensure each object only gets loaded once by keeping every loaded object in a map. Lookup objects using the map when referring to them</I>
+</P>
+
+<P align="center">
+<img src="idMapperSketch.gif" tppabs="http://martinfowler.com/isa/idMapperSketch.gif"></P>
+
+	
+<P>Some old proverb says that a man with two watches never knows what time it is. If two watches are confusing, you can get in an even bigger mess with loading objects from a database. If you aren't careful you can load the data from the same database record into two different objects. If you then update them both you'll have an interesting time writing the changes out to the database correctly.
+	</P>
+	
+<P>Related to this is an obvious  performance problem. If you load the same data more than once you're incurring an expensive cost in remote calls. So avoiding loading the same data twice doesn't just help correctness, it can also speed up your application.
+	</P>
+	
+<P>A <I>Identity Map</I> keeps a record of all the objects that have been read from the database in a single business transaction. Whenever you want an object, you check the <I>Identity Map</I> first to see if you already have it.
+	</P>	
+
+
+<H2>How it Works</H2>
+	
+<P>The basic idea behind the identity map is to have a series of maps of objects that have been pulled from the database. In a simple case, with an isomorphic schema, you'll have one map per table in the database. When you load an object from the database, you first check the map. If there's an object in the map that corresponds to the one you're loading, then you return that. If not you go to the database, but as you load the objects you put them into the map for future reference.
+	</P>
+	
+<P>There are a number of implementation choices to worry about. As well as these <I>Identity Map</I>s interact with concurrency management, so you should consider <A href="optimistic.html" tppabs="http://martinfowler.com/isa/optimistic.html"><I>Optimistic Offline Lock</I></A>.
+	</P>	
+	
+<a name="N2B"></a>
+	
+<H3>Choice of Keys</H3>
+		
+<P>The first thing to consider is what the key should be for the map. The obvious choice is to use the primary key of the corresponding database table. This works well if the key a single column and is immutable. Using a surrogate primary key fits in very well with this approach. You can then use the key as the key in the map. The key will usually be a simple data type so the comparison behavior will work nicely.
+		</P>
+	
+	
+<a name="N34"></a>
+	
+<H3>Explicit or Generic</H3>
+		
+<P>You have to choose whether to make the <I>Identity Map</I> explicit or generic. An explicit <I>Identity Map</I> is accessed with distinct methods for each kind of object you need: such as <code>findPerson(1)</code>. A generic map uses a single method for all kinds of objects, with a parameter to indicate which kind of object you need, such as <code>find("Person", 1)</code>. The obvious advantage is that you can support a generic map with a generic and reusable object. It's easy to construct a reusable <A href="registry.html" tppabs="http://martinfowler.com/isa/registry.html"><I>Registry</I></A> that can be used for all kinds of objects and doesn't need updating when you add a new map.
+		</P>
+		
+<P>However I prefer an explicit <I>Identity Map</I>. For a start this gives you compile time checking in a strongly typed language. But more than that it has all the other advantages of an explicit interface: it's easier to see what maps are available and what they are called. It does mean adding a method each time you add a new map, but that is a small overhead for the virtues of explicitness.
+		</P>
+		
+<P>Your type of key affects the choice. You can only use a generic map if all your objects have the same type of key. This is a good argument for encapsulating different kinds of database key behind a single key object - see <A href="identityField.html" tppabs="http://martinfowler.com/isa/identityField.html"><I>Identity Field</I></A> for details.
+		</P>
+	
+	
+<a name="N55"></a>
+	
+<H3>How many</H3>
+		
+<P>Here the decision varies between one map per class and one map for the whole session. A single map for the session only works if you have database-unique  keys (see the discussion in <A href="identityField.html" tppabs="http://martinfowler.com/isa/identityField.html"><I>Identity Field</I></A> for the trade-offs on that.) Once you have one <I>Identity Map</I>, the benefit is that you only have one place to go to and no awkward decisions about inheritance.
+		</P>
+		
+<P>If you have multiple maps then the obvious route is to have one map per class or per table. This works well if your database schema and object models are the same. If they look different then it's usually easier to base the maps on your objects rather than your tables, as the objects shouldn't really know about the intricacies of the mapping.
+		</P>
+		
+<P>Inheritance rears an ugly head here. If you have cars as a subtype of vehicle, do you have one map or separate maps? Keeping them separate can make polymorphic references much more awkward, since any lookup needs to know to look in both maps. As a result I prefer to use a single map for each inheritance tree, but that means that you should also make your keys unique across the inheritance trees, which can be awkward if you use <A href="leafTableInheritance.html" tppabs="http://martinfowler.com/isa/leafTableInheritance.html"><I>Concrete Table Inheritance</I></A>
+		
+</P>
+		
+<P>An advantage of a single map, is that you don't have to add new identity maps when you add database tables. However if you tie your maps to your <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A>s (see below) it won't be any extra burden.
+		</P>		
+		
+	
+	
+<a name="N72"></a>
+	
+<H3>Where to put them</H3>
+		
+<P>
+<I>Identity Map</I>s need to be put somewhere where they are easy to find. They are also tied to the process context that you're working in. You need to ensure that each session gets it's own instance of martin, one that's isolated from any other session's instance. As such you need to put the <I>Identity Map</I> on a session specific object. If you are using <A href="unitOfWork.html" tppabs="http://martinfowler.com/isa/unitOfWork.html"><I>Unit of Work</I></A> then that's by far the best place for the <I>Identity Map</I>s since the <A href="unitOfWork.html" tppabs="http://martinfowler.com/isa/unitOfWork.html"><I>Unit of Work</I></A> is the main place for keeping track of data coming in or out of the database.
+		</P>
+		
+<P>If you don't have a <A href="unitOfWork.html" tppabs="http://martinfowler.com/isa/unitOfWork.html"><I>Unit of Work</I></A> then the best bet is a <A href="registry.html" tppabs="http://martinfowler.com/isa/registry.html"><I>Registry</I></A> that's tied to the session.
+		</P>
+		
+<P>As I've implied here, you usually see a single <I>Identity Map</I> for a session, otherwise you need to provide transactional protection for your <I>Identity Map</I>, which is more work than any sane developer would try to do. However there are a couple of exceptions. The biggest one is to use an object database as a transactional cache, even if you use a relational database for record data. While I haven't seen any independent performance studies, the possibilities suggest it's worth taking a look at and many people I respect are big fans of this approach to improve performance.
+		</P>
+		
+<P>The second exception  is for objects that are read-only in all cases. If an object can never be modified, there's no need to worry about it being shared across sessions. In performance intensive systems it can be very beneficial to load in all read-only data once and have available to whole process. In this case you would have your read-only <I>Identity Map</I>s held in a process context and your updatable <I>Identity Map</I>s at a session context. This would also apply to objects that aren't completely read-only, but are updated so rarely that you don't mind flushing the process wide <I>Identity Map</I> and potentially bouncing the server  when it happens.
+		</P>
+		
+<P>Even if you're inclined to have only one <I>Identity Map</I> you could split it into two along read-only and updatable lines. You can avoid clients having to know which is which by providing an interface that checks both maps.
+		</P>
+	
+
+
+<H2>When to Use it</H2>
+	
+<P>In general you need to use an <I>Identity Map</I> to manage any object that is brought from a database and modified. The key reason you need it is because you don't want a situation where you have two in-memory objects that correspond to a single database record, where you might modify the two records inconsistently and thus confuse the database mapping.
+	</P>
+	
+<P>Another value in <I>Identity Map</I> is that it acts as a cache for database reads, which means you can avoid going to the database each time you need some data.
+	</P>
+	
+<P>One case where you may not need an <I>Identity Map</I> is for immutable objects. If you can't change an object, then you don't have to worry about modification anomalies. But <I>Identity Map</I> still have advantages. The most important of these is the performance advantages of the cache. Another is that it helps to avoid problems where people use the wrong form of equality test, a problem that's  prevalent in Java where you can't override ==. 
+	</P>
+	
+<P>Another case where you don't need a <I>Identity Map</I> is for a dependent object. Since their persistence is controlled by their parent, there is no need for a map to maintain identity. However although you don't need a map, you may want to provide one if there's a need to access the object through a database key. In this case the map is merely an index, so it's arguable whether it really counts as a map at all.
+	</P>
+	
+
+
+
+<H2>Example: Methods for an <I>Identity Map</I> (Java)</H2>
+	
+<P>For each <I>Identity Map</I> we have a  map field and accessors.
+	</P>
+	
+<pre> 
+	private Map people = new HashMap();
+
+	public static void addPerson(Person arg) {
+		soleInstance.people.put(arg.getID(), arg);
+	}
+
+	public static Person getPerson(Long key) {
+		return (Person) soleInstance.people.get(key);
+	}
+
+	public static Person getPerson(long key) {
+		return getPerson(new Long(key));
+	}
+</pre>	
+	
+<P>One of the annoyances of Java is the fact that <code>long</code> isn't an object, therefore you can't use a <code>long</code> as an index for a map. This isn't as much of a pain as it can be, since we don't actually do any arithmetic on the index. The one place where it is irritating is when you want to retrieve an object with a literal. You hardly ever need to do that in production code, but you often do in test code. So I've included a getting method that takes a <code>long</code> to make testing easier.
+	</P>
+	
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

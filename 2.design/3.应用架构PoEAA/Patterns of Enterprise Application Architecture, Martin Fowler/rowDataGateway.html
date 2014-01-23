@@ -1,0 +1,274 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Row Data Gateway</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Row Data Gateway</H1>
+<HR>
+
+<P align="center">
+<I>An object that acts as a <A href="gateway.html" tppabs="http://martinfowler.com/isa/gateway.html"><I>Gateway</I></A> to a single record in a data source</I>
+</P>
+
+<P align="center">
+<img src="dbgateRow.gif" tppabs="http://martinfowler.com/isa/dbgateRow.gif"></P>
+
+	
+<P>Embedding database access code into in-memory objects can leave you with a fair few disadvantages. For a start it adds complexity. If your in-memory objects have business logic of their own, adding the database manipulation code is another aspect of complexity.  Testing is awkward too, because if your in-memory objects are tied to a database tests are slower to run due to all the database access. You may have to access multiple databases with all those little annoying variations on their SQL.
+	</P>
+	
+<P>A <I>Row Data Gateway</I> gives you objects that look exactly like the record in your record structure, but can be accessed with the regular programming mechanisms of your programming language. All the details of accessing the data source are hidden behind this interface.
+	</P>
+	
+
+
+<H2>How it Works</H2>
+		
+<P>A <I>Row Data Gateway</I> acts as an object that exactly mimics a single record, such as one database row. Each column in the database becomes one field in the <I>Row Data Gateway</I>. The <I>Row Data Gateway</I> will usually do any type conversion from the data source types to the in-memory types, but this type conversion is usually pretty simple. The <I>Row Data Gateway</I> holds the data about a row a client can then access the <I>Row Data Gateway</I> directly. The gateway acts as a good interface for each row of data. This approach works particularly well for <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s.
+		</P>		
+		
+<P>With a <I>Row Data Gateway</I> you're faced with the questions of where to put the find operations that generate the <I>Row Data Gateway</I>s.  You can use static find methods, but that precludes polymorphism should you want to substitute different finder methods for different data sources. In this case it often makes sense to have separate finder objects. So each table in a relational database will have one finder class and one gateway class for the results.
+		</P>
+		
+<A name="dbGateFindRow.gif"></A><img align="top" src="dbGateFindRow.gif" tppabs="http://martinfowler.com/isa/dbGateFindRow.gif"><P>
+<I>Figure 1: Interactions for a find with a row based <I>Row Data Gateway</I></I>
+</P>
+		
+<P>It's often hard to tell the difference between a <I>Row Data Gateway</I> and an <A href="activeRecord.html" tppabs="http://martinfowler.com/isa/activeRecord.html"><I>Active Record</I></A>. The crux of the matter is whether there's any domain logic present, if so you have an <A href="activeRecord.html" tppabs="http://martinfowler.com/isa/activeRecord.html"><I>Active Record</I></A>. A <I>Row Data Gateway</I> should contain only database access logic, and no domain logic.
+		</P>	
+
+
+<H2>When to Use it</H2>
+	
+<P>The choice of <I>Row Data Gateway</I> often comes in two steps, firstly whether to use a gateway at all and then whether to use <I>Row Data Gateway</I> or <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html"><I>Table Data Gateway</I></A>.
+	</P>
+	
+<P>I use <I>Row Data Gateway</I> most often when I'm using a <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>. In this case the <I>Row Data Gateway</I> nicely factors out the database access code and also allows it to be reused easily amongst different <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s. 
+	</P>
+	
+<P>I don't use a <I>Row Data Gateway</I> when I'm using a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. If the mapping is simple then <A href="activeRecord.html" tppabs="http://martinfowler.com/isa/activeRecord.html"><I>Active Record</I></A> does the same job without an additional layer of code. If the mapping is complex then <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A> works better as it's not much more effort to write, but does a better job of decoupling the data structure from the domain objects because the domain objects don't need to know what the layout of the database is. Of course you can use the <I>Row Data Gateway</I> to shield the domain objects from the database structure, and that is a good thing to do if you are changing the database structure when using <I>Row Data Gateway</I> and don't want to change the domain logic. But doing this on a large scale leads you to three data representations: one in the business logic, one in the <I>Row Data Gateway</I>, and one in the database - and that's one too many. So I usually have <I>Row Data Gateway</I>s that are the mirror of the database structure.
+	</P>
+	
+<P>If you use <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> with <I>Row Data Gateway</I> you may notice that you have business logic that's repeated across multiple scripts that would make sense in the <I>Row Data Gateway</I>. Moving that logic will gradually turn your <I>Row Data Gateway</I> into <A href="activeRecord.html" tppabs="http://martinfowler.com/isa/activeRecord.html"><I>Active Record</I></A>s. This is often a good thing as it reduces duplication in the business logic.
+	</P>	
+
+
+
+<H2>Example: A Person Record (Java)</H2>
+	
+<P>Here's an example for <I>Row Data Gateway</I>. The table is a simple person table.
+	</P>
+	
+<pre> 
+create table people (ID int primary key, lastname varchar, firstname varchar, number_of_dependents int)
+</pre>	
+	
+<P>PersonGateway is a gateway for this table. It starts with data fields and accessors
+	</P>
+	
+<pre>class PersonGateway... 
+	private String lastName;
+	private String firstName;
+	private int numberOfDependents;
+
+	public String getLastName() {
+		return lastName;
+	}
+
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
+	}
+
+	public String getFirstName() {
+		return firstName;
+	}
+
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
+
+	public int getNumberOfDependents() {
+		return numberOfDependents;
+	}
+
+	public void setNumberOfDependents(int numberOfDependents) {
+		this.numberOfDependents = numberOfDependents;
+	}
+</pre>	
+	
+<P>The gateway class itself can handle updates and inserts
+	</P>
+	
+<pre>class PersonGateway... 
+	private static final String updateStatementString =
+			"UPDATE people " +
+			"	set lastname = ?, firstname = ?, number_of_dependents = ? " +
+			"	where id = ?";
+
+	public void update() {
+		PreparedStatement updateStatement = null;
+		try {
+			updateStatement = DB.prepare(updateStatementString);
+			updateStatement.setString(1, lastName);
+			updateStatement.setString(2, firstName);
+			updateStatement.setInt(3, numberOfDependents);
+			updateStatement.setInt(4, getID().intValue());
+			updateStatement.execute();
+		} catch (Exception e) {
+			throw new ApplicationException(e);
+		} finally {DB.cleanUp(updateStatement);
+		}
+	}
+</pre>	
+	
+<pre> 
+	private static final String insertStatementString =
+			"INSERT INTO people VALUES (?, ?, ?, ?)";
+
+	public Long insert() {
+		PreparedStatement insertStatement = null;
+		try {
+			insertStatement =  DB.prepare(insertStatementString);
+			setID(findNextDatabaseId());
+			insertStatement.setInt(1, getID().intValue());
+			insertStatement.setString(2, lastName);
+			insertStatement.setString(3, firstName);
+			insertStatement.setInt(4, numberOfDependents);
+			insertStatement.execute();
+			Registry.addPerson(this);
+			return getID();
+		} catch (SQLException e) {
+			throw new ApplicationException(e);
+		} finally { DB.cleanUp(insertStatement);
+		}
+	}
+</pre>	
+	
+<P>To pull people out of the database, we have a separate <code>PersonFinder</code>.  This works with the gateway to create new gateway objects
+	</P>
+	
+<pre>class PersonFinder... 
+	private final static String findStatementString =
+			"SELECT id, lastname, firstname, number_of_dependents " +
+			"	from people " +
+			"	WHERE id = ?";
+
+	public PersonGateway find(Long id) {
+		PersonGateway result = (PersonGateway) Registry.getPerson(id);
+		if (result != null) return result;
+		PreparedStatement findStatement = null;
+		ResultSet rs = null;
+		try {
+			findStatement = DB.prepare(findStatementString);
+			findStatement.setLong(1, id.longValue());
+			rs = findStatement.executeQuery();
+			rs.next();
+			result = PersonGateway.load(rs);
+			return result;
+		} catch (SQLException e) {
+			throw new ApplicationException(e);
+		} finally {DB.cleanUp(findStatement, rs);
+		}
+	}
+
+	public PersonGateway find(long id) {
+		return find(new Long(id));
+	}
+</pre>	
+	
+<pre>class PersonGateway... 
+	public static PersonGateway load(ResultSet rs) throws SQLException {
+			Long id = new Long(rs.getLong(1));
+			PersonGateway result = (PersonGateway) Registry.getPerson(id);
+			if (result != null) return result;
+			String lastNameArg = rs.getString(2);
+			String firstNameArg = rs.getString(3);
+			int numDependentsArg = rs.getInt(4);
+			result = new PersonGateway(id, lastNameArg, firstNameArg, numDependentsArg);
+			Registry.addPerson(result);
+			return result;
+	}
+</pre>	
+	
+<P>The finder uses a <A href="registry.html" tppabs="http://martinfowler.com/isa/registry.html"><I>Registry</I></A> to hold <A href="identityMap.html" tppabs="http://martinfowler.com/isa/identityMap.html"><I>Identity Map</I></A>s.
+	</P>	
+	
+<P>We can then use the gateways from a <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>
+	
+</P>
+	
+<pre> 
+		PersonFinder finder = new PersonFinder();
+		Iterator people = finder.findResponsibles().iterator();
+		StringBuffer result = new StringBuffer();
+		while (people.hasNext()) {
+			PersonGateway each = (PersonGateway) people.next();
+			result.append(each.getLastName());
+			result.append("\t");
+			result.append(each.getFirstName());
+			result.append("\t");
+			result.append(String.valueOf(each.getNumberOfDependents()));
+			result.append("\n");
+		}
+		return result.toString();
+</pre>	
+	
+<P>If we want to use the <I>Row Data Gateway</I> from a domain object then the domain object needs to get at the data from the gateway. Instead of copying the data to the domain object we can use the row based gateway as a data holder for the domain object.
+	</P>
+	
+<pre>class Person... 
+	private PersonGateway data;
+
+	public Person(PersonGateway data) {
+		this.data = data;
+	}
+</pre>	
+	
+<P>Accessors on the domain logic can then delegate to the gateway for the data
+	</P>
+	
+<pre>class Person... 
+	public int getNumberOfDependents() {
+		return data.getNumberOfDependents();
+	}
+
+</pre>	
+	
+<P>The domain logic then uses the getters to pull the data from the gateway
+	</P>
+	
+<pre>class Person... 
+	public Money getExemption() {
+		Money baseExemption = Money.dollars(1500);
+		Money dependentExemption = Money.dollars(750);
+		return baseExemption.add(dependentExemption.multiply(this.getNumberOfDependents()));
+	}
+</pre>	
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

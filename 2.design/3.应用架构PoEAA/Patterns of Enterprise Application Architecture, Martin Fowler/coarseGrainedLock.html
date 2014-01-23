@@ -1,0 +1,105 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Coarse-Grained Lock</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Coarse-Grained Lock</H1>
+<HR>
+
+<P>
+<I>by David Rice and Matt Foemmel</I>
+</P>
+
+<P align="center">
+<I>Lock a set of related objects with a single lock</I>
+</P>
+
+<P align="center">
+<img src="coarseGrainedLockSketch.gif" tppabs="http://martinfowler.com/isa/coarseGrainedLockSketch.gif"></P>
+
+	
+	
+<P>Often groups of objects can be edited as a group.  Perhaps you have a customer and its set of addresses. When using the application it makes sense that if you want to lock any one of these items, you should lock all of them. Having a separate lock for  each individual object presents a number of challenges.  The first problem is that anyone manipulating these objects has to write code that can find all the objects in the group in order to lock them. This is easy enough for a customer and its addresses but gets tricky as you have more locking groups.  And what if the groups get complicated?  And where is this behavior when your framework is managing lock acquisition?  Then, if your locking strategy requires that an object be loaded in order that it be locked, such as with <A href="optimistic.html" tppabs="http://martinfowler.com/isa/optimistic.html"><I>Optimistic Offline Lock</I></A>, locking a large group will present a performance problem.  And if using <A href="pessimistic.html" tppabs="http://martinfowler.com/isa/pessimistic.html"><I>Pessimistic Offline Lock</I></A> a large lock set is a management headache and increases lock table contention.</P>
+	
+	
+<P>A <I>Coarse-Grained Lock</I> is a single lock that covers many objects. Not just does this simplify the locking action itself, it also means that you don't have load all the members of a group in order to lock them.</P>	
+
+
+<H2>How it Works</H2>	
+	
+<P>The first step to implementing <I>Coarse-Grained Lock</I> is to create a single point of contention for locking a group of objects.  This allows that only one lock be necessary for locking the entire set.  Then provide the shortest path possible to finding that single lock point in order to minimize the group members which must be identified and possibly loaded into memory in the process of obtaining that lock.</P>	
+	
+	
+<P>With the <A href="optimistic.html" tppabs="http://martinfowler.com/isa/optimistic.html"><I>Optimistic Offline Lock</I></A>, having each item in a group share a version creates the single point of contention.  And this means sharing the <I>same</I> version, not an <I>equal</I> version.  Incrementing this version will lock the entire group with a <B>shared lock</B>.  Setup your model to point every member of the group at the shared version and you have certainly minimized the path to the point of contention.</P>
+	
+	
+<A name="sharedVersion.gif"></A><img align="top" src="sharedVersion.gif" tppabs="http://martinfowler.com/isa/sharedVersion.gif"><P>
+<I>Figure 1: Sharing a version</I>
+</P>
+	
+	
+<P>Using a shared <A href="pessimistic.html" tppabs="http://martinfowler.com/isa/pessimistic.html"><I>Pessimistic Offline Lock</I></A> will require that each member of the group share some sort of lockable token.  The <A href="pessimistic.html" tppabs="http://martinfowler.com/isa/pessimistic.html"><I>Pessimistic Offline Lock</I></A> must then be acquired on this token.  As <A href="pessimistic.html" tppabs="http://martinfowler.com/isa/pessimistic.html"><I>Pessimistic Offline Lock</I></A> is often used as a complement to <A href="optimistic.html" tppabs="http://martinfowler.com/isa/optimistic.html"><I>Optimistic Offline Lock</I></A> a shared version object makes an excellent candidate for the role of lockable token.</P>
+	
+	
+<A name="sharedVersionPessimistic.gif"></A><img align="top" src="sharedVersionPessimistic.gif" tppabs="http://martinfowler.com/isa/sharedVersionPessimistic.gif"><P>
+<I>Figure 2: Locking a shared version</I>
+</P>
+	
+	
+<P>Eric Evans and David Siegel<font color="#FF0000">[missing reference]</font> define an <B>aggregate</B> as a cluster of associated objects that we treat as a unit for data changes.  Each aggregate has a <B>root</B> that provides the only access point to members of the set and a <B>boundary</B> that defines what gets included in the set.  This aggregate  has the characteristics that call for a <I>Coarse-Grained Lock</I> since working with any member of the aggregate requires locking all members.  Locking an aggregate yields an alternative  to a shared lock that we'll call a <B>root lock</B>. This works by locking the root and making all lock usage within the aggregate use that root lock.  This approach gives us a single point of contention.</P>
+	
+	
+<P>Using a root lock as a <I>Coarse-Grained Lock</I> makes it necessary to implement navigation to the root in your object graph.  This allows a locking mechanism, upon receiving a request to lock any object in the aggregate, to navigate to the root and lock it instead.  This navigation can be accomplished in a couple of fashions.  You can maintain a direct navigation to the root for each object  in the aggregate, or you can use a sequence of intermediate relationships. For example,  in a hierarchy, the obvious root is the top level parent. You can link the descendents to the top level parent directly, or you can give each node a link to its immediate parent and navigate that structure to reach the root.  In a large graph the later strategy might cause performance problems as each parent must be loaded in order to determine whether it has a parent.  Be sure to use a <A href="virtualProxy.html" tppabs="http://martinfowler.com/isa/virtualProxy.html"><I>Lazy Load</I></A> when loading the objects that make up the path to your root.  This will not only prevent  objects from being loaded before they are needed but will prevent an infinite mapping loop should you be mapping a bidirectional relationship.  Be wary of the fact that if <A href="virtualProxy.html" tppabs="http://martinfowler.com/isa/virtualProxy.html"><I>Lazy Load</I></A> for a single aggregate occur across multiple system transactions you may end up with an aggregate built from inconsistent parts.  That, of course, is not good.</P>  
+	
+	
+<A name="rootLock.gif"></A><img align="top" src="rootLock.gif" tppabs="http://martinfowler.com/isa/rootLock.gif"><P>
+<I>Figure 3: Locking the root</I>
+</P>
+	
+	
+<P>Note that a shared lock also works for locking an aggregate as locking any object in the aggregate will simultaneously lock the root.</P>
+	
+	
+<P>Both the shared lock and root lock implementation of <I>Coarse-Grained Lock</I> have their trade-offs.  When using a relational database the shared lock carries the burden that most all of your selects will require a join to the version table.   On the other hand, loading objects while navigating to the root could be a performance hit as well.  The root lock and <A href="pessimistic.html" tppabs="http://martinfowler.com/isa/pessimistic.html"><I>Pessimistic Offline Lock</I></A> perhaps make an odd combination.  By the time you navigate to the root and lock it you may need to reload a few objects to guarantee their freshness.  And, as always, building a system against a legacy data store will place numerous constraints on your implementation choice.  Locking implementations abound.  The number of subtleties even more numerous.  Be sure to arrive at an implementation that suits your needs.</P>	
+
+
+<H2>When to Use it</H2>
+	
+<P>The most obvious place to use a <I>Coarse-Grained Lock</I> is to satisfy business requirements.  This is the case when locking an aggregate.  Consider a lease object that owns a collection of assets.  It probably does not make business sense that one user edits the lease while another user simultaneously edits an asset.  Locking either the asset or the lease ought to result in the lease and all of its assets being locked.</P>
+	
+	
+<P>A very positive outcome of using <I>Coarse-Grained Lock</I> is the decreased cost of acquiring and releasing locks.  This is certainly a legitimate motivation for using <I>Coarse-Grained Lock</I>.  The shared lock can be used beyond the concept of Evans' aggregate. But be careful when working from non-functional requirements such as performance.  Beware of creating unnatural object relationships in order to facilitate <I>Coarse-Grained Lock</I>.</P>
+
+	
+
+	      
+	
+	
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

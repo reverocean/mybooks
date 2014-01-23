@@ -1,0 +1,210 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Service Stub</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+
+<HR>
+<H1 align="center">Service Stub</H1>
+<HR>
+
+
+<P>
+<I>by David Rice</I>
+</P>
+
+<P align="center">
+<I>A stand-in implementation of an external service</I>
+</P>
+
+<P align="center">
+<img src="serviceStubSketch.gif" tppabs="http://martinfowler.com/isa/serviceStubSketch.gif"></P>
+
+
+	
+<P>Business systems are quite often dependent upon access to third party services such as credit scoring, tax rate lookups, or a pricing engine.  These services are often not only third party, but also provided by a remote or external resource.  Any developer who has built such an application can speak to the frustration of being dependent upon resources completely out of his control.  Feature delivery, reliability, and performance are all unpredictable.</P>
+
+	
+<P>At the very least such issues will slow the development process.  Developers will sit around waiting for the service to come back on line or maybe put some hacks into the code to compensate for yet to be delivered features.  Much worse, and quite likely, such dependencies will lead to periods in time when tests cannot execute.  When tests cannot run the development process is broken.</P>	
+	
+	
+<P>What is needed is a stand-in implementation of this service.  One whose development is completely within the control of the application team and one that runs locally, fast, and in-memory.  This stand-in code is often referred to as a <I>Service Stub</I>.</P>
+	
+
+	
+
+<H2>How it Works</H2>
+
+	
+<P>The first step is to define access to this service with an interface.  If your service provider has already provided an interface for your platform be sure to read the note at the bottom of this section on interface design.  Once the interface is defined and an implementation or two has been coded it's simply a matter of using the <A href="plugins.html" tppabs="http://martinfowler.com/isa/plugins.html"><I>Plugin</I></A> pattern to provide the proper implementations of services to your application at runtime.</P>
+	
+	
+<P>As with most all design the key principal to stub implementation is keeping it simple.  Since the primary reason behind writing a stub is to speed and ease the development process, writing a complex stub defeats its own purpose.</P>
+	
+	
+<P>Let's walk through the thought process of stubbing a sales tax service.  Code examples are provided below.  This service provides state sales tax amount and rate, given an address, product type, and sales amount.  The first question to ask when stubbing is 'What's the simplest possible means of providing this service?'  The answer is to write a 2 or 3 line implementation that uses a flat tax rate for all requests.</P>
+		
+	
+<P>But tax laws aren't that simple.  Certain products are exempt from taxation in certain states.  As such rules are part of tax law we're dependent upon our tax service for such information.  And we have a lot of functionality that is dependent upon whether taxes are charged so we need to accommodate the possibility of tax exemption in our service.  Now ask what is the simplest means of adding this to the stub?  It's probably to add an if statement and simply for a specific combination of address and product.  The number of lines of code in our stub can probably still be counted on one hand.</P>
+	
+	
+<P>If you're building one of those fantastically large back office applications with 10,000+ functions points and as many unit tests you might even add some more dynamic functionality to your stub.  We might wish to add a method to the service that allows tests to setup exemptions for themselves.  We could even provide reset functionality for test cleanup.</P>
+	
+	
+<P>Even with the addition of dynamic functionality the stub is incredibly simple.  We've only added a map and some simple lookup code.  If you've ever dealt with state and local sales tax laws you know they are beyond complicated.  A switch to a flat tax would indeed put tens of thousands of accountants and lawyers out of work!  Keep the stub simple enough so that it doesn't break under its own weight.  If the stub is too simple to possibly work it's probably a good stub.  Always remember that the primary purpose of <I>Service Stub</I> is to speed up development.</P>
+	
+	
+<P>The last, more dynamic stub above brings up an interesting question regarding the dependency between test cases and a <I>Service Stub</I>.  The stub relies upon a method for adding exemptions that is not in the service interface.  This implies that the test case has some prior knowledge as to the type of the tax service that will be loading during its execution.  This defeats the purpose of using the <A href="plugins.html" tppabs="http://martinfowler.com/isa/plugins.html"><I>Plugin</I></A> pattern to load the stub implementation.</P>
+	
+	
+<P>Two solutions come to mind:  The first is to add the test methods to the public interface.  Throw assertions or system exceptions in the production implementation of these methods.  If you're writing to a 3rd party interface you will need to extend the interface.</P>
+	
+	
+<P>Another alternative is possible if your tests cases don't require that the stub be configured and reset between each case.  Simply have the stub configure itself.  If a developer adds a test case she must make sure that all of the available stubs can provide appropriate behavior for this test case.  This avoids compilation dependencies and seems a reasonable compromise to the logical dependency problem.  There is no way around the fact that some coordination is required between your stubs and your tests.</P>
+	
+	
+<P>A note on interface definition:</P>
+	
+	
+<P>Perhaps the service provider supplies a well designed SDK for your particular platform and this work has already been done for you.  Otherwise you'll have to do it yourself.  I've seen instances where the application developers might someday -- 'in theory' -- switch vendors for a particular service, therefore despite the existence of a perfectly good interface supplied by a vendor the application team goes ahead and defines its own interface.  The application is providing its own definition of the service.  This is over-design.  It's too much work and results in unreadable code and a debugging nightmare.  Writing to the vendor interface is clean enough.  A switch in vendors, if the services are in fact similar, will require merely a simple refactoring of the code that calls that interface.</P> 
+	
+
+
+
+<H2>When to Use it</H2>
+	
+<P>Deciding to use <I>Service Stub</I> is a simple task.  Ask yourself these questions to determine whether to use <I>Service Stub</I>
+</P>
+	
+	
+<UL>
+<LI style="">Is my dependence upon this remote or third party service slowing down my development process?</LI>
+<LI style="">Does this service make testing laborious?</LI>
+<LI style="">Can I write an extremely simple stand-in implementation of this service that would suffice for testing purposes?</LI>
+</UL>
+	
+	
+	
+	
+	
+	
+<P>If you find yourself answering yes by all means go ahead and write the stub.  Just never forget that a stub is meant to make your life easier rather than more difficult.</P>
+
+
+
+	
+<H2>Example: Sales Tax Service (Java)</H2>
+	
+	
+<P>Our sales tax service is being used by the A/R subsystem of a lease management system.  Within this system billing schedules store information as to when to generate charges for each leased asset.  Each night a charge generation process inspects each billing schedule and generates appropriate charges.  For each charge a call to the tax service is made in order to generate any tax charges.</P>
+	
+<A name="chargeGen.gif"></A><img align="top" src="chargeGen.gif" tppabs="http://martinfowler.com/isa/chargeGen.gif"><P>
+<I>Figure 1: </I>
+</P>
+	
+	
+<P>What is the point of such a long winded description of a leasing A/R subsystem?  It's that a <I>Service Stub</I> makes no sense unless you're actually testing functionality that is dependent upon that service.  Here we have a charge generation service that is creating extra charges if taxes ought to be charged.  Our A/R subsystem has lots of behavior dependent upon whether tax charges were created.  But our tax system is a web service and we're having massive downtime problems.  Sounds like an ideal candidate for a stub.</P>
+	
+	
+<P>Since we've decided to use a tax service that has been deployed as a web service the first thing we need to do is write a Java interface to define the service.  While we've been given a nice WSDL interface that's not something we want to write to from our domain layer so we'll define our own Java interface:</P>
+	
+	
+<pre>class SalesTaxService... 
+
+public interface SalesTaxService {
+
+	public static final SalesTaxService INSTANCE = (SalesTaxService) PluginFactory.getPlugin(SalesTaxService.class);
+
+	public TaxInfo getSalesTaxInfo(String productCode, Address addr, Money saleAmount);
+}
+
+</pre>
+	
+	
+<P>Note the use of <A href="plugins.html" tppabs="http://martinfowler.com/isa/plugins.html"><I>Plugin</I></A> to load the service implementation.</P>
+	
+	
+<P>The application code that we're working on here is charge generation and we want to test that the generator will return a single charge if a product is exempt from taxation and an additional state sales tax charge if the product is not exempt.  We also want to test the returned charges are of the correct type.  So let's write our test:</P>
+	
+	
+<pre>class Tester... 
+	public void setUp() throws Exception {
+		exemptBillingSchedule =
+				new BillingSchedule(new Money(200, Currency.USD), "12300", CHICAGO_ILLINOIS);
+		nonExemptBillingSchedule =
+				new BillingSchedule(new Money(200, Currency.USD), "12305", CHICAGO_ILLINOIS);
+	}
+
+	public void testChargeGenerationExemptProduct() throws Exception {
+		Charge[] charges = new ChargeGenerator().calculateCharges(exemptBillingSchedule);
+		assertEquals("single charge", charges.length, 1);
+		assertTrue("non tax charge", !charges[0].isTax());
+		assertEquals("correct charge", charges[0].getAmount(),
+				exemptBillingSchedule.getBillingAmount());
+	}
+
+	public void testChargeGenerationNonExemptProduct() throws Exception {
+		Charge[] charges = new ChargeGenerator().calculateCharges(nonExemptBillingSchedule);
+		assertEquals("two charges", charges.length, 2);
+		assertTrue("non tax charge", !charges[0].isTax());
+		assertTrue("tax charge", charges[1].isTax());
+		assertEquals("correct charge", charges[0].getAmount(),
+				nonExemptBillingSchedule.getBillingAmount());
+		assertEquals("correct tax", charges[1].getAmount(), new Money(10, Currency.USD));
+	}
+</pre>
+	
+	
+<P>Given these tests we can use the 'middle of the road' stub approach from above and write a service implementation that looks for a particular product and location to determine exemption status:</P>
+	
+	
+<pre>class ExemptProductTaxService...</pre>
+	
+	
+<P>As we discussed above there are a few trade-offs to think about when approaching the test case to stub dependency issue.  Here we have values hard coded in both the test case and the stub.  There's no way around this when testing so just choose a sensible approach.</P>
+	
+	
+<P>Here's what the simplest possible service would look like:</P>
+	
+	
+<pre>class FlatSalesTaxService... 
+	public TaxInfo getSalesTaxInfo(String productCode, Address addr, Money saleAmount) {
+		return new TaxInfo(FLAT_RATE, saleAmount.multiply(FLAT_RATE.doubleValue()));
+	}
+</pre>
+	
+	
+<P>Here's what the dynamic tax service might look like:</P>
+	
+	
+<pre>class TestTaxService...</pre>	
+		
+
+
+	
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

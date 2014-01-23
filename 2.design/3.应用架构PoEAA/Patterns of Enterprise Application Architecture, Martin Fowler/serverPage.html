@@ -1,0 +1,422 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Template View</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Template View</H1>
+<HR>
+
+<P align="center">
+<I>Render information into HTML by embedding markers into an HTML page</I>
+</P>
+
+<P align="center">
+<img src="templateViewSketch.gif" tppabs="http://martinfowler.com/isa/templateViewSketch.gif">
+</P>
+
+	
+<P>Writing a program that spits out HTML is often more difficult than you would like. Although programming languages are better at creating text than they used to be (some of us remember character handling in Fortran and standard Pascal), creating and concatenating string constructs is still painful. If there isn't much to do it isn't too bad - but a whole HTML page is a lot of text manipulation
+	</P>
+	
+<P>With static HTML pages, those that don't change from request to request, you can use nice editors that product the HTML pages in a wisiwig manner. Even those of us that like raw text editors find it easier to just type in the text and tags rather than fiddle with string concatenation in a programming language. 
+	</P>
+	
+<P>Of course the issue is with dynamic web pages: those that take the results of something like database queries and embed those into the HTML page. The page looks different with each result, and as a result regular HTML editors aren't enough for the job.
+	</P>
+	
+<P>The best way to work is to compose the dynamic web page the same way that you write a static page, but put in markers that can be resolved into calls to gather dynamic information. Since the static part of the page acts as a template for the particular response, I call this a <I>Template View</I>.
+	</P>	
+
+
+<H2>How it Works</H2>
+	
+<P>The basic idea of <I>Template View</I> is to embed markers into a static HTML page when it's written. When the page is used to service a request, the makers are replaced by the results of some computation, such as a database query. This way the page can be laid out in the usual manner, often using wisiwig editors, often by people who aren't programmers. The makers then communicate with real programs to put in the results.
+	</P>
+	
+<P>There's a lot of tools that use <I>Template View</I>. As a result this pattern isn't about how to build one yourself, more about how to use one effectively and what the alternative is.
+	</P>
+	
+	
+<a name="N2C"></a>
+	
+<H3>Embedding the Markers</H3>
+		
+<P>There are a number of ways these markers can be placed into the HTML. One form is to use HTML-like tags. This works well with wisiwig editors because they realize that anything between &lt;&gt; is special and either ignore it, or treat it differently. If the tags follow the rules for well-formed XML you can also use XML tools on the resulting document (providing your HTML is XHMTL, of course). Another way to do it is to use special text markers in the body text. Wisiwig editors then treat that as regular text, still ignoring it but probably doing annoying things like spell checking it. The advantage is that the syntax can be easier than the clunky HTML/XML syntax.
+		</P>
+		
+<P>One of the most popular forms of <I>Template View</I> is a <B>server page</B>: something like ASP, JSP, or PHP. These actually go a step further than the basic form of a <I>Template View</I> in that they allow you to embed arbitrary programming logic, referred to as <B>scriplets</B>,  into the page. In my view, however, this feature is actually a big problem and you're better off limiting yourself to basic <I>Template View</I> behavior when you use server page technology.
+		</P>
+		
+<P>The most obvious disadvantage of putting a lot of scriptlets  into a page is that it eliminates the possibility of having non-programmers edit the page. This is particularly important when you're using graphic designers to do the page design. However the biggest problems of embedding scriptlets into the page come from the fact that a page is poor module for a program. Even when using a object-oriented language the page construct loses you most of the structural features that make it possible to do a modular design: either in OO or procedural style.  
+		</P>
+		
+<P>Even worse, putting a lot of scriptlets into the page makes it too easy to mingle together the different layers of an enterprise application. When domain logic starts turning up on server pages it becomes far too difficult to structure it well, and far too easy to duplicate logic across different server pages. Indeed the worst code I've seen in the last few years has been server page code. 
+		</P>
+	
+	
+<a name="N4A"></a>
+	
+<H3>Helper Object</H3>
+		
+<P>The key to avoiding is to provide a regular object as a <B>helper</B> to each page. This helper has all the real programming logic inside it. The page only has calls into the helper. This simplifies the page and makes it more of a pure <I>Template View</I>. The resulting simplicity makes it easier for non-programmers to edit the page and programmers to concentrate on the helper. Depending on the actual tool you are using, you can often reduce all the templates in a page to HTML/XML tags, which keeps the page more consistent and more amenable to tool support.
+		</P>
+		
+<P>This sounds like a simple and commendable principle, but as ever there are a quite a few dirty issues involved to make things more complicated. The simplest markers are those that get some information from the rest of the system and put into the correct place on the page. These makers are easily translated into calls to the helper. The calls result in text, or something that's trivially turned into text, and the engine places the text on the page.
+		</P>
+	
+	
+<a name="N5B"></a>
+	
+<H3>Conditional Display</H3>
+		
+<P>A more knotty issue is conditional page behavior. The simplest case is the situation where something is only displayed if some condition is true. The easiest thing to imagine where would be some kind of conditional tag along the lines of <code>&lt;IF condition = "$pricedrop &gt; 0.1"&gt; ...show some stuff &lt;/IF&gt;</code>. The trouble with this is that when you start having conditional tags like this, you start going down the path of turning the templates into a programming language of themselves. This leads you into all the same problems that you get by embedding scriptlets into the page. If you need a full programming language you might as well use scriptlets, but you know what I think of that idea! 	
+		</P>
+		
+<P>As a result I see purely conditional tags as a bad smell, something you should try to avoid. Sometimes you can't avoid it, but you should look to see if you can come up with something more focused than a general purpose <code>&lt;IF&gt;</code> tag. 	
+		</P>
+		
+<P>If you are displaying some text conditionally, one option is to move the condition into the helper. The page then always inserts the result of the call to helper, it's just that if the condition isn't true the helper sends back an empty string. This way the logic is all in the helper. This approach works best if there is no markup for the returned text, or it is enough to return empty markup which gets ignored by the browser. 
+		</P>
+		
+<P>An example of where this doesn't work is where you might want to highlight good selling items in a list by putting their names in bold. In this situation we always need the names to be displayed, but sometimes we want the special markup. One way to deal with this situation is to have the helper generate the markup. This keeps all the logic out of the page, at the cost of moving the choice of highlighting mechanism away from the page designer and into the programming code.
+		</P>
+		
+<P>In order to keep the choice of HTML in the hands of the page design, you need some form of conditional tag. 	However it's important to look beyond simple <code>&lt;IF&gt;</code> tags. A good route to go is to consider a focused tag. So rather than have a tag that looks like.
+		</P>
+		
+<pre>&lt;IF expression = "isHighSelling()"&gt;&lt;B&gt;&lt;/IF&gt;&lt;property name = "price"/&gt;&lt;IF expression = "isHighSelling()"&gt;&lt;/B&gt;&lt;/IF&gt;</pre>
+		
+<P>you could have a more focused tag such as
+		</P>
+		
+<pre>&lt;highlight condition = "isHighSelling" style = "bold"&gt;&lt;property name = "price"/&gt;&lt;/highlight&gt;</pre>
+		
+<P>In either case it's important that the condition be done based on a single boolean property of the helper. Putting any more complex expression into the page is a case of putting logic into the page itself. 
+		</P>
+	
+		
+<P>Another example may be something like putting information on a page that depends on the locale that the system is running in. Consider some text that should only be shown in the united states or Canada. Rather than have 
+		</P>
+		
+<pre>&lt;IF expression = "locale = 'US' || 'CA'"&gt; ...special text &lt;/IF&gt;</pre>
+		
+<P>Look for something like 
+		</P>
+		
+<pre>&lt;locale includes = "US, CA"&gt; ...special text &lt;/locale&gt;</pre>
+	
+<a name="N91"></a>
+	
+<H3>Iteration</H3>
+		
+<P>Iterating over a collection presents similar issues. If you want a table where each line corresponds to a line item on an order, you'll need a construct that allows you easily to display information for each line. Here it's hard to avoid a general iterate over a collection tag, and indeed they usually work simply enough to fit in quite well.
+		</P>
+		
+<P>Of course the kinds of tag you have to work with are often limited by the environment that you find yourself in. Some environments give you a fixed set of templates to work with. In which case you may be more constrained than you would like in following these kinds of guidelines. In other environments, however, you may have more choice in what kinds of tag to use, many of them allow you to define your own libraries of tags. 
+	</P>	
+	
+	
+<a name="N9D"></a>
+	
+<H3>When to Process</H3>
+		
+<P>The name <I>Template View</I> brings out the fact that the primary purpose of <I>Template View</I> is to play the view role in <A href="mvc.html" tppabs="http://martinfowler.com/isa/mvc.html"><I>Model View Controller</I></A>. For many systems the <I>Template View</I> should only be the view. In simpler systems it may be reasonable for <I>Template View</I> to play the controller role, and possibly even the model role, although I would strive to separate model processing as much as possible. In cases where the <I>Template View</I> is taking on responsibilities beyond the view, it's important to ensure that these responsibilities are handled by the helper, not by the page. Controller and model responsibilities involve program logic, and like all program logic this should sit in the helper.
+		</P>
+		
+<P>Any template system needs extra processing by the web server. This can either be done  by compiling the page after it's created, compiling the page on it's first request, or by interpreting the page on each request. Obviously the latter isn't a good idea if the interpretation takes a while to do.
+		</P>
+	
+	
+<a name="NB6"></a>
+	
+<H3>Using Scripts</H3>
+		
+<P>Although server pages are one of the most common forms of <I>Template View</I> around these days, you can write scripts in a <I>Template View</I> style. I've seen a fair bit of perl done this way. The trick, most noticeably demonstrated by perl's CGI.pm is to avoid concatenating strings by having function calls that output the appropriate tags to the response. This way you can write the script in your programming language and avoid the mess of interspersing print strings with programming logic.
+		</P>
+	
+
+
+<H2>When to Use it</H2>
+	
+<P>For implementing the view in <A href="mvc.html" tppabs="http://martinfowler.com/isa/mvc.html"><I>Model View Controller</I></A> the main choice is between <I>Template View</I> and <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A>. The strength of <I>Template View</I> is that it allows you to compose the content of the page by looking at the structure of the page itself. This seems to be easier for most people, both to do and to learn. In particular it nicely supports the idea of a graphic designer laying out a page with a programmer working on the helper.
+	</P>
+	
+<P>
+<I>Template View</I> has two significant weaknesses. Firstly the common implementations make it too easy to put complicated logic onto the page, thus making it hard to maintain - particularly by non-programmers. You need good discipline to keep the page simple and display oriented, putting logic in the helper. The second weakness of <I>Template View</I> is that it is harder to test than <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A>. In most implementations <I>Template View</I> are designed to work within a web server and are very difficult or impossible to test outside of a web server. <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A> implementations are much easier to hook into a testing harness and test without a running web server.
+	</P>
+	
+<P>In thinking about a view you also need to consider <A href="htmlRenderer.html" tppabs="http://martinfowler.com/isa/htmlRenderer.html"><I>Two Step View</I></A>. 	Depending on the template scheme you have you may be able to implement <A href="htmlRenderer.html" tppabs="http://martinfowler.com/isa/htmlRenderer.html"><I>Two Step View</I></A> using specialized tags. However you may find it easier to implement <A href="htmlRenderer.html" tppabs="http://martinfowler.com/isa/htmlRenderer.html"><I>Two Step View</I></A> based on a <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A>. If you are going to need <A href="htmlRenderer.html" tppabs="http://martinfowler.com/isa/htmlRenderer.html"><I>Two Step View</I></A> you need to take that into account when making your choice.
+	</P>
+
+
+	
+<H2>Example: Using a JSP as a view with a separate controller (Java)</H2>
+	
+<P>When you're using a JSP as a view only, it will always be invoked from a controller rather than directly from the servlet container. In this case it's important to pass to the JSP any information it will need to figure out what to display. A good way to do this is to have the controller create a helper object and pass that to the JSP using the http request. We'll use the simple display example from <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A>. The web handling method for the servlet looks like this
+	</P>
+	
+<pre>class ArtistController... 
+	public void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws IOException, ServletException {
+		Artist artist = Artist.findNamed(request.getParameter("name"));
+		if (artist == null)
+			forward("/MissingArtistError.jsp", request, response);
+		else {
+			request.setAttribute("helper", new ArtistHelper(artist));
+			forward("/artist.jsp", request, response);
+		}
+	}
+</pre>
+	
+<P>As far as the <I>Template View</I> is concerned the important behavior is creating the helper and placing in the request. The sever page can now reach the helper with the useBean tag.
+	</P>
+	
+<pre> 
+&lt;jsp:useBean id="helper" type="actionController.ArtistHelper" scope="request"/&gt;
+</pre>
+	
+<P>With the helper in place we can now use it to access the information that we need to display. The model information that the helper needs was passed to it when it was created.
+	</P>
+	
+<pre>class ArtistHelper... 
+	private Artist artist;
+
+	public ArtistHelper(Artist artist) {
+		this.artist = artist;
+	}
+</pre>
+	
+<P>We can use the helper to get appropriate information from the model. In the simplest case we can provide a method to get some simple data, such as the artist's name.
+	</P>
+	
+<pre>class ArtistHelper... 
+	public String getName() {
+		return artist.getName();
+	}
+</pre>
+	
+<P>We can then access this information by a Java expression
+	</P>
+	
+<pre> 
+&lt;B&gt; &lt;%=helper.getName()%&gt;&lt;/B&gt;
+</pre>
+	
+<P>or a property
+	</P>
+	
+<pre> 
+&lt;B&gt;&lt;jsp:getProperty name="helper" property="name"/&gt;&lt;/B&gt;
+</pre>
+	
+<P>The choice between properties or expressions depends on who is editing the JSP. For a programmer the expression is easy to read and more compact, but HTML editors may not be able to handle them. Non-programmers will probably prefer the tags, since that fits in the general form of HTML and leaves fewer room for confusing errors.
+	</P>
+	
+<P>Using a helper is one way to remove awkward scriptlet code. If you want to show a list of albums for an artist you need to run a loop. You can do this by using a scriptlet in the server page.
+	</P>
+	
+<pre> 
+&lt;UL&gt;
+&lt;%
+	for (Iterator it = helper.getAlbums().iterator(); it.hasNext();) {
+		Album album = (Album) it.next();%&gt;
+	&lt;LI&gt;&lt;%=album.getTitle()%&gt;&lt;/LI&gt;
+
+&lt;%	}   %&gt;
+&lt;/UL&gt;
+</pre>
+	
+<P>But frankly I find this mix of Java and HTML really hard to read. An alternative is to move the for loop to the helper
+	</P>
+	
+<pre>class ArtistHelper... 
+	public String getAlbumList() {
+		StringBuffer result = new StringBuffer();
+		result.append("&lt;UL&gt;");
+		for (Iterator it = getAlbums().iterator(); it.hasNext();) {
+			Album album = (Album) it.next();
+			result.append("&lt;LI&gt;");
+			result.append(album.getTitle());
+			result.append("&lt;/LI&gt;");
+		}
+		result.append("&lt;/UL&gt;");
+		return result.toString();
+	}
+
+	public List getAlbums() {
+		return artist.getAlbums();
+	}
+</pre>
+	
+<P>which I find easier to follow since the amount of HTML is quite small. It also allows you to use a property to get this list.
+	</P>
+	
+<P>A third alternative available to JSP, of course, is to use a custom tag for iteration.
+	</P>
+	
+<pre> 
+&lt;UL&gt;&lt;tag:forEach host = "helper" collection = "albums" id = "each"&gt;
+ &lt;LI&gt;&lt;jsp:getProperty name="each" property="title"/&gt;&lt;/LI&gt;
+&lt;/tag:forEach&gt;&lt;/UL&gt;
+</pre>
+	
+<P>This is a much nicer alternative as it keeps scriptlets out of the JSP and HTML out of the helper.
+	</P>
+	
+
+
+	
+<H2>Example: ASP.NET Server Page (.NET)</H2>
+	
+<P>In this example, I'm continuing the example I started in <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A>. To remind you, this example shows the scores made by batsmen in a single innings of a cricket match. For those who think that cricket is a small noisy animal, I'll pass over the long rhapsodies about the world's most immortal sport and boil it all down to the fact that the page displays three essential pieces of information
+	</P>
+	
+<UL>
+<LI style="">An id number to reference which match it is</LI>
+<LI style="">Which team's scores are shown, and which innings the scores are for</LI>
+<LI style="">A table showing each batsman's name, his score, and shows his run rate: the number of balls he faced divided by the runs he scored</LI>
+</UL>
+	
+	
+	
+<P>If you don't understand what these statistics mean, don't worry about it. Cricket is full of statistics, perhaps its greatest contribution to humanity is providing odd statistics for eccentric papers.
+	</P>
+	
+	
+<P>The discussion in <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A> covers how a web request is handled. To sum up, the object that acts as both the controller and the view is the <code>aspx</code> ASP.NET page. To avoid holding the controller code in a scriptlet, instead you define a separate code behind class. 
+	</P>
+	
+<pre> 
+&lt;%@ Page language="c#" Codebehind="bat.aspx.cs" AutoEventWireup="false" trace="False" Inherits="batsmen.BattingPage" %&gt;
+</pre>
+	
+<P>The page can access the methods and properties of the code behind class directly. Furthermore the code behind can define a <code>Page_Load</code> method to handle the request. In this case I've defined the page load method as a template method <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612">[Gang of Four]</a> on a <A href="layerSupertype.html" tppabs="http://martinfowler.com/isa/layerSupertype.html"><I>Layer Supertype</I></A>
+	
+</P>
+	
+<pre>class CricketPage... 
+		protected void Page_Load(object sender, System.EventArgs e) {
+			db = new OleDbConnection(DB.ConnectionString);
+			if (hasMissingParameters()) 
+				errorTransfer (missingParameterMessage);
+			DataSet ds = getData();
+			if (hasNoData (ds))
+				errorTransfer ("No data matches your request");
+			applyDomainLogic (ds);
+			DataBind();
+			prepareUI(ds);
+		}
+</pre>
+	
+<P>For the purposes of <I>Template View</I> I can ignore all but the last couple of lines of the page load. The call to <code>DataBine</code> allows various page variables to be properly bound to their underlying data sources. That will do for the simpler cases, for more complicated cases the last line calls a method in the particular page's code behind to prepare any objects for use by the page.
+	</P>
+	
+<P>The match id number, team, and innings are single values for the page, all of which came into the page as parameters in the http request. I can provide these values by using properties on the code behind class.
+	</P>
+	
+<pre>class BattingPage... 
+		protected String team {
+			get {return Request.Params["team"];}
+		}
+		protected String match {
+			get {return Request.Params["match"];}
+		}
+
+
+		protected String innings {
+			get {return Request.Params["innings"];}
+		}
+		protected String ordinalInnings{
+			get {return (innings == "1") ? "1st" : "2nd";}
+		}
+</pre>
+	
+<P>With the properties defined, I can use them in the text of the page.
+	</P>
+	
+<pre> 
+		&lt;P&gt;
+			Match id:
+			&lt;asp:label id="matchLabel" Text="&lt;%# match %&gt;" runat="server" font-bold="True"&gt;
+			&lt;/asp:label&gt;&amp;nbsp;
+		&lt;/P&gt;
+		&lt;P&gt;
+			&lt;asp:label id=teamLabel Text="&lt;%# team %&gt;" runat="server" font-bold="True"&gt;
+			&lt;/asp:label&gt;&amp;nbsp;
+			&lt;asp:Label id=inningsLabel Text="&lt;%# ordinalInnings %&gt;" runat="server"&gt;
+			&lt;/asp:Label&gt;&amp;nbsp;innings&lt;/P&gt;
+		&lt;P&gt;
+</pre>
+	
+<P>The table is a little more complicated, but actually works out easy in practice because of the graphical design facilities in Visual Studio. Visual Studio provides a data grid control which can be bound to a single table from a data set. I can do this binding in the <code>prepareUI</code> method that's called by the page load method.
+	</P>
+	
+<pre>class BattingPage... 
+		override protected void prepareUI(DataSet ds) {
+			DataGrid1.DataSource = ds;
+			DataGrid1.DataBind();
+		}
+</pre>
+	
+<P>The batting class is a <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> that provides domain logic for the batting table in the database. It's <code>data</code> property is the data from that table, enriched by domain logic from the <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A>. In this case the enrichment is the run rate, which is calculated rather stored in the database.
+	</P>
+	
+<P>With the ASP.NET data grid you can select which columns from the table you wish to display in the web page, together with information about the appearance of the table. In this case we can select the name, runs, and rate columns.
+	</P>
+	
+<pre> 
+			&lt;asp:DataGrid id="DataGrid1" runat="server" Width="480px" Height="171px" BorderColor="#336666" BorderStyle="Double" BorderWidth="3px" BackColor="White" CellPadding="4" GridLines="Horizontal" AutoGenerateColumns="False"&gt;
+				&lt;SelectedItemStyle Font-Bold="True" ForeColor="White" BackColor="#339966"&gt;&lt;/SelectedItemStyle&gt;
+				&lt;ItemStyle ForeColor="#333333" BackColor="White"&gt;&lt;/ItemStyle&gt;
+				&lt;HeaderStyle Font-Bold="True" ForeColor="White" BackColor="#336666"&gt;&lt;/HeaderStyle&gt;
+				&lt;FooterStyle ForeColor="#333333" BackColor="White"&gt;&lt;/FooterStyle&gt;
+				&lt;Columns&gt;
+					&lt;asp:BoundColumn DataField="name" HeaderText="Batsman"&gt;
+						&lt;HeaderStyle Width="70px"&gt;&lt;/HeaderStyle&gt;
+					&lt;/asp:BoundColumn&gt;
+					&lt;asp:BoundColumn DataField="runs" HeaderText="Runs"&gt;
+						&lt;HeaderStyle Width="30px"&gt;&lt;/HeaderStyle&gt;
+					&lt;/asp:BoundColumn&gt;
+					&lt;asp:BoundColumn DataField="rateString" HeaderText="Rate"&gt;
+						&lt;HeaderStyle Width="30px"&gt;&lt;/HeaderStyle&gt;
+					&lt;/asp:BoundColumn&gt;
+				&lt;/Columns&gt;
+				&lt;PagerStyle HorizontalAlign="Center" ForeColor="White" BackColor="#336666" Mode="NumericPages"&gt;&lt;/PagerStyle&gt;
+			&lt;/asp:DataGrid&gt;&lt;/P&gt;
+</pre>
+	
+<P>The HTML for this data grid looks intimidating, but in Visual Studio you don't manipulate the HTML directly, you manipulate it through property sheets in the development environment - as you do for much of the rest of the page.
+	</P>
+	
+<P>This ability to have web form controls on the web page that understands the ADO.NET abstractions of data sets and data tables is the strength, and limitation, of this scheme. It's strength is that when you can transfer information through data sets, all of this can be nicely supported through the kind of tools that Visual Studio has. It's limitation is that it only works seamlessly when you use patterns such as <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A>. If you have very complex domain logic, you'll find that a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> becomes helpful, and then to take advantage of the tools the <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> needs to create its own data set. 
+	</P>
+	
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

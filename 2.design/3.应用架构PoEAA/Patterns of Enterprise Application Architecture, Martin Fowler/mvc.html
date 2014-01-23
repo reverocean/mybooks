@@ -1,0 +1,93 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Model View Controller</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Model View Controller</H1>
+<HR>
+
+<P align="center">
+<I>Split user interface interaction into three distinct roles</I>
+</P>
+
+<P align="center">
+<img src="mvc-sketch.gif" tppabs="http://martinfowler.com/isa/mvc-sketch.gif"></P>
+
+	
+<P>Model View Controller (MVC) has been one of the most quoted (and most misquoted) patterns around. It started life as a framework developed by Trygve Reenskaug for the Smalltalk platform in the late 70's. Since then it's played an influential role for most UI frameworks and thinking about UI design.
+	</P>
+
+
+<H2>How it Works</H2>
+	
+<P>MVC considers three roles. The model is an object that represents some information about the domain. It is a non-visual object and contains all the data and behavior other than that used for the UI. In its most pure OO notion the model is an object within a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. You might also think of a <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> as the model providing the <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> contained no UI machinery. Such a definition stretches the notion of model, but fits the role breakdown of MVC.
+	</P>
+	
+<P>The view represents the display of the model in the UI. So if our model is a customer object our view might be a frame full of UI widgets or an HTML page rendered with information from the model. The view is only about display of information, any changes to the information are handled by the third member of the MVC trinity: the controller. The controller takes user input and manipulates the model and causes the view to update appropriately. The UI is therefore a combination of the view and the controller.
+	</P>
+	
+<P>As I think about MVC I see two principal separations: separating the presentation from the model and separating the controller from the view.Of these the separation of presentation from model is one of the most fundamental heuristics of good software design. This separation is important for several reasons
+	</P>
+	
+<UL>
+<LI style="">Fundamentally they are about different concerns. When you are developing a view you are thinking about the mechanisms of UI and how to lay out a good user interface. When you are working with a model you are thinking about business policies, perhaps database interactions. Certainly you will use different very different libraries when working with one or the other. Often you find people prefer one area to another and you'll see people specialize in one side of the line.</LI>
+<LI style="">Depending on context users like to see the same basic model information in different ways. Separating the two allows you develop multiple presentations, indeed entire different kinds of interfaces and yet use the same model code. In its most noticeable form this could be providing a rich client, web browser, remote API, and command line interface to the same model. Even within a sole web interface you might have different customer pages at different points in an application.</LI>
+<LI style="">Non visual objects are usually easier to test than visual ones. Separating presentation and model allows you to test all the domain logic easily without resorting to awkward GUI scripting tools and the like.</LI>
+</UL>
+	
+		
+	
+<P>A key point in this separation is the direction of the dependencies: the presentation depends on the model but not the other way around. People programming in the model should be entirely unaware of what presentation is being used. This both simplifies their task and makes it easier to add new presentations later on. It also means that presentation changes can be made freely without altering the model. 
+	</P>
+	
+<P>This principle introduces a common issue. With a rich client interface of multiple windows it's quite likely that there will be several presentations of a model on a screen at once. If a user makes a change to the model from one presentation, then the others need to change. To do this without creating a dependency you'll usually find the <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612">observer pattern</a>, such as event propagation or a listener. The presentation acts as the observer of the model: whenever the model changes it sends out an event and the presentations refresh the information. 
+	</P>
+	
+<P>The second separation, that of view and controller, is less important. Indeed the irony is that almost every version of Smalltalk didn't actually make a view/controller separation. The classic example of why you'd want to separate them is to support editable and non-editable behavior. You can do this with one view and two controllers for the two cases, where the controllers are <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612">strategies </a>for the view. But in practice most systems have only one controller per view, so this separation is usually not done. However this separation has come back into vogue with web interfaces where it does become useful to separate the controller and view again.
+	</P>
+	
+<P>The fact that most GUI frameworks combine view and controller has led to the many misquotations of MVC that I've run into. The model and the view is obvious - but where is the controller. The common idea is that it sits between the model and the view as in the <A href="applicationController.html" tppabs="http://martinfowler.com/isa/applicationController.html"><I>Application Controller</I></A>, a fact that isn't helped that the word "controller" is used in both contexts. Whatever the merits of a <A href="applicationController.html" tppabs="http://martinfowler.com/isa/applicationController.html"><I>Application Controller</I></A> it's a very different beast to an MVC controller
+	</P>	
+	
+<P>For the purposes of this set of patterns these principles are really all you need to know. If you want to dig deeper into MVC the best available reference is<a href="http://www.amazon.com/exec/obidos/ASIN/0471958697">[POSA]</a>.  
+	</P>
+	
+
+
+<H2>When to Use it</H2>
+	
+<P>The value of MVC really lies in its two principles. Of these the separation of presentation and model is one of the most important design principles in software and the only time you shouldn't follow it is in very simple systems where the model wouldn't have any real behavior in it anyway. As soon as you get some non visual logic you should look to apply the separation. Unfortunately a lot of UI frameworks make it difficult, and those that don't often are taught without a separation. 
+	</P>
+	
+<P>The separation of view and controller is less important, so I'd only recommend doing it when it is really helpful. For rich client systems that ends up being hardly ever. It is however common in web front ends where the controller is separated out - most of the patterns on web design here are based on that principle.
+	</P>
+	
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

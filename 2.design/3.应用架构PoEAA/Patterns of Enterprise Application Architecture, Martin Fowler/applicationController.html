@@ -1,0 +1,265 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Application Controller</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Application Controller</H1>
+<HR>
+
+<P align="center">
+<I>A centralized point for handling screen navigation and flow of an application</I>
+</P>
+
+<P align="center">
+<img src="appControllerSketch.gif" tppabs="http://martinfowler.com/isa/appControllerSketch.gif"></P>
+
+	
+<P>Some applications contain a significant amount of logic about what kind of screens to use at different points. This may involve invoking certain screens at certain points in an application, such as the wizard style of interaction where the user is led through a series of screens that need to be done in a certain order. Other cases we may see screens that are only brought in under certain conditions, or choices between different screens that depend on earlier input.
+	</P>	
+	
+<P>To some degree the various <A href="mvc.html" tppabs="http://martinfowler.com/isa/mvc.html"><I>Model View Controller</I></A> input controllers can make some of these decisions, but as the application gets more complex this can lead to duplicated code, as several controller for different screens need to know what to do in a certain situation.
+	</P>
+	
+<P>You can remove this duplication by placing all the flow logic into an <I>Application Controller</I>. Input controllers then ask the <I>Application Controller</I> for the appropriate commands for execution against a model and the correct view to use depending on the context within the application.
+	</P>	
+
+
+<H2>How it Works</H2>
+	
+<P>An <I>Application Controller</I> has two main responsibilities: deciding which domain logic to run, and deciding which view to the display the response with. To this the <I>Application Controller</I> typically holds two structured collections of class references, one for domain commands to execute against in the domain layer and one of views 
+	</P>
+	
+<A name="appControllerCommandClass.gif"></A><img align="top" src="appControllerCommandClass.gif" tppabs="http://martinfowler.com/isa/appControllerCommandClass.gif"><P>
+<I>Figure 1: An application controller has two collections of references to classes, one for domain logic and one for view. </I>
+</P>
+	
+<P>For both the domain commands and the view, the application controller needs some way of storing something that it can invoke. A <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612">command</a> is a good choice, since it allows us to get hold of and run a block of code easily. Languages that can manipulate functions can hold a reference to a function. Another option is to hold a string that can be used to invoke a method by reflection.
+	</P>
+	
+<P>The domain commands can be command objects that are part of the <I>Application Controller</I> layer, or they can be references to a <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> or domain object method in the domain layer.
+	</P>	
+	
+<P> If you are using server pages as your views, then you can use the name of a server page. If you are using a class then a command or a string for a reflective call makes sense. You might also use an XSLT transform, in which case the <I>Application Controller</I> can hold a string to reference the transform.
+	</P>
+	
+<P>One decision you'll need to make is how much to separate the <I>Application Controller</I> from the rest of the presentation. At the first level this manifests itself in whether the <I>Application Controller</I> has dependencies into the UI machinery. This might take the form of the <I>Application Controller</I> directly accessing the http session data, forwarding to a server page, or invoking methods on a rich client class.
+	</P>
+	
+<P>Although I've seen direct <I>Application Controller</I>s, my preference is for the <I>Application Controller</I> to have no links to the UI machinery. For a start this makes it possible to test the <I>Application Controller</I> independently of the UI, which is a major benefit. It's also important to do this if you're going to use the same <I>Application Controller</I> with multiple presentations. As a result many people like to think of the <I>Application Controller</I> as an intermediate layer between the presentation and the domain.
+	</P>
+	
+<A name="appControllerDependencies.gif"></A><img align="top" src="appControllerDependencies.gif" tppabs="http://martinfowler.com/isa/appControllerDependencies.gif"><P>
+<I>Figure 2: My preferred dependencies when using an application controller</I>
+</P>
+	
+<P>An application can have multiple <I>Application Controller</I>s to handle different parts of an application. This allows you to split complex logic up into several classes. In this case I usually see the work divided up into broad areas of the user interface and build separate <I>Application Controller</I>s for each area. On a simpler application I might only need a single <I>Application Controller</I>.
+	</P>
+	
+<P>If you have multiple presentations - such as a web front end, a rich client, and a PDA - you may be able to use the same <I>Application Controller</I> for each presentation. Don't be too eager to do this. Often different UIs really need a different screen flow to give a really usable user interface. However reusing a single <I>Application Controller</I> may reduce the development effort, and the lower effort may be worth the cost of a more awkward user interface.
+	</P>
+	
+<P>A common way of thinking about a UI is a state machine, where certain events trigger different responses depending on the state of certain key objects in the application. In this case the <I>Application Controller</I> is particularly amenable to using metadata to represent the state machine's control flow. The metadata can either be set up by programming language calls (the simplest way) or you can store the metadata in a separate configuration file.
+	</P>
+	
+<P>You may find domain logic that's particular to one request placed in an <A href="applicationController.html" tppabs="http://martinfowler.com/isa/applicationController.html"><I>Application Controller</I></A>. As you might suspect I'm come down pretty hard against that notion. However the boundary between domain and application logic does get very murky. Say I'm handling insurance applications and I need to show a separate screen of questions only if the application is a smoker.  Is this application logic or domain logic? If I have only a few such cases I'd probably put that kind of logic in the <A href="applicationController.html" tppabs="http://martinfowler.com/isa/applicationController.html"><I>Application Controller</I></A>, but if it occurs in lots of places I'd look to design the <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> in such a way to drive this. 
+	</P>	
+
+
+<H2>When to Use it</H2>
+	
+<P>If the flow and navigation of your application is pretty simple, anyone can visit any screen in pretty much any order, then there's little value in a <I>Application Controller</I>. The strength of an <I>Application Controller</I> comes from definite rules about the order in which pages should be visited and  different views depending on the state of objects.
+	</P>
+	
+<P>A good signal to use an <I>Application Controller</I> is if you find yourself having to make similar changes in lots of different places when your application's flow changes.
+	</P>	
+
+
+<H2>Further Reading</H2>
+	
+<P>Most of the ideas that underlie the writing of this pattern came from reading <a href="">[Knight and Dai]</a>. Although these ideas aren't exactly new, I found the explanation in <a href="">[Knight and Dai]</a> remarkably clear and compelling. 
+	</P>
+
+
+
+	
+<H2>Example: State Model <I>Application Controller</I> (Java)</H2>
+	
+<P>State model's are a common way of thinking about user interfaces. They are particularly appropriate when you need to react differently to events depending on the state of some object. In this example I have a simple state model for a couple of commands on an asset. Our leasing experts would faint at the virulent oversimplification of this model, but it'll do to show an example of state based <I>Application Controller</I>.
+	</P>
+	
+<A name="assetStates.gif"></A><img align="top" src="assetStates.gif" tppabs="http://martinfowler.com/isa/assetStates.gif"><P>
+<I>Figure 3: A simple state diagram for an asset</I>
+</P>
+	
+<P>As far as the code is concerned our rules are this:
+	</P>
+	
+<UL>
+<LI style="">When we receive a return command, and we're in the on lease state then we display a page to capture information about the return of the asset</LI>
+<LI style="">A return even in the in inventory state is an error, so we show an illegal action page</LI>
+<LI style="">When we receive a damage command we show different pages depending on whether the asset is in inventory or on lease.</LI>
+</UL>
+	
+	
+	
+<P>The input controller is a <A href="frontController.html" tppabs="http://martinfowler.com/isa/frontController.html"><I>Front Controller</I></A>. It services the request like this.
+	</P>
+	
+<pre>class FrontServlet... 
+	public void service(HttpServletRequest request, HttpServletResponse response)
+			throws IOException, ServletException
+	{
+		ApplicationController appController = getApplicationController(request);
+		String commandString = (String) request.getParameter("command");
+		DomainCommand comm =
+				appController.getDomainCommand(commandString, getParameterMap(request));
+		comm.run(getParameterMap(request));
+		String viewPage =
+				"/" + appController.getView(commandString, getParameterMap(request)) + ".jsp";
+		forward(viewPage, request,  response);
+	}
+</pre>
+	
+<P>The flow of the service method is pretty straightforward, we find the right application controller for a given request, we then ask the application controller for the domain command, execute the domain command, ask the application controller for a view, and finally forward to the view.
+	</P>
+	
+<P>In this scheme I'm assuming a number of <I>Application Controller</I>s, all of which implement the same interface.
+	</P>
+	
+<pre>interface ApplicationController... 
+	DomainCommand getDomainCommand (String commandString, Map params);
+	String getView (String commandString, Map params);
+</pre>
+	
+<P>For our commands, the appropriate <I>Application Controller</I> is an asset application controller. The asset application controller uses an response class to hold the domain commands and view references. For the domain command I use a reference to a class, for the view I use a string which the front controller will turn into a URL for a JSP.
+	</P>
+	
+<pre>class Response... 
+	private Class domainCommand;
+	private String viewUrl;
+	public Response(Class domainCommand, String viewUrl) {
+		this.domainCommand = domainCommand;
+		this.viewUrl = viewUrl;
+	}
+	public DomainCommand getDomainCommand() {
+		try {
+			return (DomainCommand) domainCommand.newInstance();
+		} catch (Exception e) {throw new ApplicationException (e);
+		}
+	}
+	public String getViewUrl() {
+		return viewUrl;
+	}
+</pre>
+	
+<P>The application controller holds onto the responses using a map of maps indexed by the command string and an asset status.
+	</P>
+	
+<pre>class AssetApplicationController... 
+	private Response getResponse(String commandString, AssetStatus state) {
+		return (Response) getResponseMap(commandString).get(state);
+	}
+	private Map getResponseMap (String key) {
+		return (Map) events.get(key);
+	}
+	private Map events = new HashMap();
+</pre>
+	
+<A name="assetAppControllerClass.gif"></A><img align="top" src="assetAppControllerClass.gif" tppabs="http://martinfowler.com/isa/assetAppControllerClass.gif"><P>
+<I>Figure 4: How the asset application controller stores its references to domain commands and views</I>
+</P>
+	
+<P>When asked for a domain command, the controller looks at the request to figure out the asset id, goes to the domain to find out the status of that asset, looks up the appropriate domain command class, instantiates it and returns the new object.
+	</P>
+	
+<pre>class AssetApplicationController... 
+	public DomainCommand getDomainCommand (String commandString, Map params) {
+		Response reponse = getResponse(commandString, getAssetStatus(params));
+		return reponse.getDomainCommand();
+	}
+	private AssetStatus getAssetStatus(Map params) {
+		String id = getParam("assetID", params);
+		Asset asset = Asset.find(id);
+		return asset.getStatus();
+	}
+	private String getParam(String key, Map params) {
+		return ((String[])  params.get(key))[0];
+	}
+</pre>
+	
+<P>All the domain commands follow a simple interface which allows the front controller to run them.
+	</P>
+	
+<pre>interface DomainCommand... 
+	abstract public void run(Map params);
+</pre>
+	
+<P>Once the domain command has done what it needs to do then the <I>Application Controller</I> comes into play again as it's asked for the view.
+	</P>
+	
+<pre>class AssetApplicationController... 
+	public String getView (String commandString, Map params) {
+		return getResponse(commandString, getAssetStatus(params)).getViewUrl();
+	}
+</pre>
+	
+<P>In this case the <I>Application Controller</I> doesn't return the full URL to the JSP. It returns a string that the front controller turns into an URL. I do this to avoid duplicating the URL paths in the responses. This also will make it easy to add further indirection later should I need it. 
+	</P>
+	
+<P>The <I>Application Controller</I> can be loaded for use with code.
+	</P>
+	
+<pre>class AssetApplicationController... 
+	public void addResponse(String event, Object state, Class domainCommand, String view) {
+		Response newResponse = new Response (domainCommand, view);
+		if ( ! events.containsKey(event))
+			events.put(event, new HashMap());
+		getResponseMap(event).put(state, newResponse);
+	}
+	private static void loadApplicationController(AssetApplicationController appController) {
+		appController = AssetApplicationController.getDefault();
+		appController.addResponse(	"return", AssetStatus.ON_LEASE,
+									GatherReturnDetailsCommand.class, "return");
+		appController.addResponse(	"return", AssetStatus.IN_INVENTORY,
+									NullAssetCommand.class, "illegalAction");
+		appController.addResponse(	"damage", AssetStatus.ON_LEASE,
+									InventoryDamageCommand.class, "leaseDamage");
+		appController.addResponse(	"damage", AssetStatus.IN_INVENTORY,
+									LeaseDamageCommand.class, "inventoryDamage");
+	}
+</pre>
+	
+<P>Doing this from a file instead isn't rocket science, but even so I'll leave it to you.
+	</P>
+	
+
+
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

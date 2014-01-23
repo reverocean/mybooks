@@ -1,0 +1,432 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Metadata Mapping</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Metadata Mapping</H1>
+<HR>
+
+<P align="center">
+<I>Hold details of object-relational mapping in metadata.</I>
+</P>
+
+<P align="center">
+<img src="metaMapperSketch.gif" tppabs="http://martinfowler.com/isa/metaMapperSketch.gif"></P>
+
+	
+<P>Much of the code that deals with object-relational mapping describes how fields in the database correspond to the field of in-memory objects. The resulting code tends to be tedious and repetitive to write. 
+	</P>
+	
+<P>A <I>Metadata Mapping</I> allows the developers to define the mappings in a simple tabular form which can then be processed by generic code to carry out the details of reading, inserting, and updating the data.
+	</P>
+
+
+<H2>How it Works</H2>
+	
+<P>There are two main parts to implementing a <I>Metadata Mapping</I>: deciding how to represent the metadata, and deciding how to use the metadata to carry out the data mapping operations.
+	</P>
+	
+<a name="N20"></a>
+	
+<H3>Represent the metadata</H3>
+		
+<P>The simplest way to represent the metadata is to use objects in your programming language. So to represent the mappings for the person class, you would have a person mapper class. Unlike a explicit <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A> however, this mapper class only has a method to return the map. A generic mapper, which can be a <A href="layerSupertype.html" tppabs="http://martinfowler.com/isa/layerSupertype.html"><I>Layer Supertype</I></A>, then interrogates the map to carry the actual mapping operations.
+		</P>
+		
+<P>Using the programming language may lead to a non-ideal syntax, and forces the mapping to be maintainable by programmers; but it avoids introducing some new language or data file into the process. Changes to the mapping have to be dealt with by deploying new classes and compiling these classes. This compilation is only for the mapping classes and shouldn't affect the rest of the system, but it may be a challenge in some environments that make deploying new or changes classes difficult.
+		</P>
+		
+<P>The immediate alternative to using classes is to use a data file format. Any format can be used, but at the moment the obvious one to use is XML, since the parsing and editing can use commonly available tools. There is an overhead, compared to classes, in doing the parsing; but the maps can be shared across and entire server process and each map only has to be parsed once per process - so the overhead turns out to be not that considerable. Even if it's difficult to update code when the maps change, it's easy to update XML mapping files.
+		</P>
+		
+<P>Another alternative is to keep the mapping data in the database itself. This keeps it together with the data, so if the database schema changes the mapping information is right there. It will require an database query to get the mapping information, but again since the mapping changes rarely you can usually cache the data for the whole process and thus only need to read the mapping tables when starting or resetting the server process.
+		</P>		
+	
+	
+<a name="N38"></a>
+	
+<H3>Performing the mapping</H3>
+		
+<P>As well as representing the metadata, you have to choose how to make use of it. There are two main options you can follow: code generation and reflective programming.
+		</P>
+		
+<P>With <B>code generation</B> you write a program whose output is the source code of classes that do the mapping based on the information in the metadata. These classes look like hand-written classes, but the are entirely generated automatically during the build process, where they are usually generated just prior to compilation. The resulting mapper classes are deployed with the sever code.
+		</P>
+		
+<P>If you use code generation, you should make sure that the code generation step is fully integrated into your build process with whatever build scripts you are using. The generated classes should never be edited by hand, and thus should need to be held in source code control. 
+		</P>
+		
+<P>A <B>reflective program</B> may ask an object for a method named "setFoo", and then run an invoke method upon the setFoo method passing in some argument. By treating methods (and fields) as data the reflective program can read in field and method names from a file and use them to carry out the mapping. I usually counsel against using reflection, partly because it's slow but mainly because it often causes code that's hard to debug. But reflection is actually quite appropriate for database mapping. Since you are reading the names of fields and methods in from a file, you are taking full advantage of the flexibility of reflection. And although reflection is slow, it's much less of an issue because the SQL calls themselves usually dominate the performance issue.
+		</P>
+		
+<P>Code generation is a less-dynamic approach since any changes to the mapping require redeploying at least that part of the software. However mapper changes should be pretty rare, and modern environments make it easy to redeploy part of an application - and you can easily keep the generated mapper classes in a separately deployable binary. 
+		</P>
+		
+<P>Reflective programming often suffers in speed, although the problem here depends very much on the actual environment you are using. Also the reflection is being done in the context of a SQL call, and as such the slower speed of using reflection may not make that much difference considering the slow speed of the remote call. 
+		</P>
+		
+<P>Both approaches can be a little awkward to debug, the comparison between them depends very much on how used developers are to generated and reflective code.
+		</P>
+		
+<P>One of the challenges of metadata is that although a simple metadata scheme often works well 90% of the time, there's often special cases that make life much more tricky. Often to handle these minority cases you have to add a lot of complexity to metadata. A useful alternative is to handle special cases by overriding the generic code with subclasses where the special code is handwritten. Such special case subclasses would be subclasses of either the generated code, or the reflective routines. Since these special cases are... well... special; it isn't easy to describe define in general how you  arrange things to support the overriding. My advice is that you handle them on a case by case basis. As you need the overriding, alter the generated/reflective code to isolate a single method that should be overridden and then override it in your special case.
+		</P>	
+		
+
+
+<H2>When to Use it</H2>
+	
+<P>
+<I>Metadata Mapping</I> can greatly reduce the amount of work you need to do in handling database mapping. However there is some setup work required to prepare the framework to handle the <I>Metadata Mapping</I>. Also while it's often easy to handle most cases with <I>Metadata Mapping</I>, you often find exceptions that can really tangle the metadata.
+	</P>
+	
+<P>It's no surprise that the commercial object-relational mapping tools use <I>Metadata Mapping</I>, since when selling a product it's always worth the effort of producing a sophisticated <I>Metadata Mapping</I>. 
+	</P>
+	
+<P>If you're building your own system, you should evaluate the trade-offs yourself. Compare the amount in adding new mappings using hand-written code and using <I>Metadata Mapping</I>. If you use reflection, look into the consequences for performance, sometimes reflection causes performance issues, but often it doesn't. Your own measurements will reveal whether it's an issue for you.
+	</P>
+	
+<P>The extra work of hand coding can be greatly reduced by creating a good <A href="layerSupertype.html" tppabs="http://martinfowler.com/isa/layerSupertype.html"><I>Layer Supertype</I></A> that handles all the common behavior. That way you should only have a few hook routines to add in for each mapping. But usually <I>Metadata Mapping</I> can reduce this further. 
+	</P>
+	
+<P>
+<I>Metadata Mapping</I> can interfere with some refactoring, particularly if you're using automated tools. If you change the name of a private field, then this can break an application unexpectedly. Even automated refactoring tools won't be able to find the field name hidden in a XML data file of a map. Using code generation is a little easier, since search mechanisms are able to find the usage. However the automated update will get lost when you re-generate the code. So a tool can warn you of a problem, but it's up to you to change the metadata yourself. If you use reflection, you won't even get the warning.
+	</P>	
+
+
+	
+<H2>Example: Using metadata and reflection (Java)</H2>
+	
+<P>The above examples, like most in this book, use explicit code. While that's the easiest to follow, it does lead to pretty tedious programming - and tedious programming is a sign that something is wrong. You can remove a lot of tedious programming by using metadata. The metadata can be used to generate code or it can be used in reflection. Here's a reflective example.
+	</P>
+	
+<a name="N88"></a>
+	
+<H3>Holding the Metadata</H3>
+		
+<P>The first question to ask about metadata is how it's going to be kept. Here I'm keeping the metadata in two classes. The data map corresponds to the mapping of one class to one table. This is a simple mapping, but it will do for illustration.
+		</P>
+		
+<pre>class DataMap... 
+	private Class domainClass;
+	private String tableName;
+	private List columnMaps = new ArrayList();
+</pre>		
+		
+<P>The data map contains a collection of column maps that map columns in the table to fields.
+		</P>
+		
+<pre>class ColumnMap... 
+	private String columnName;
+	private String fieldName;
+	private Field field;
+	private DataMap dataMap;
+</pre>		
+		
+<P>This isn't a terribly sophisticated mapping. I'm just using the default Java type mappings, which means there's no type conversion between fields and columns. I'm also forcing a one to one relationship between tables and classes.
+		</P>
+		
+<P>These structures hold the mappings, the next question is how do they get populated? For this example I'm going to populate them with Java code in specific mapper class. While that may seem a little odd, it still buys most of the benefit of metadata - that of avoiding repetitive code.
+		</P>
+		
+<pre>class PersonMapper... 
+	protected void loadDataMap(){
+		dataMap = new DataMap (Person.class, "people");
+		dataMap.addColumn ("lastname", "varchar", "lastName");
+		dataMap.addColumn ("firstname", "varchar", "firstName");
+		dataMap.addColumn ("number_of_dependents", "int", "numberOfDependents");
+	}
+</pre>
+		
+<P>During construction of the column mapper, I build the link to the field. Strictly this is an optimization, so you may not have to do this, but calculating the fields reduces the subsequent accesses by an order of magnitude on my little laptop.
+		</P>
+		
+<pre>class ColumnMap... 
+	public ColumnMap(String columnName, String fieldName, DataMap dataMap) {
+		this.columnName = columnName;
+		this.fieldName = fieldName;
+		this.dataMap = dataMap;
+		initField();
+	}
+	private void initField() {
+		try {
+			field = dataMap.getDomainClass().getDeclaredField(getFieldName());
+			field.setAccessible(true);
+		} catch (Exception e) {
+			throw new ApplicationException ("unable to set up field: " + fieldName, e);
+		}
+	}
+</pre>		
+
+		
+<P>It's not much of a challenge to see how I could write a routine to load the map from an XML file, or from a metadata database. Paltry that challenge may be, but I'll decline it and leave it to you.
+		</P>
+		
+<P>Now the mappings are defined, I can make use of them. The strength of the metadata approach is that all of the code that actually manipulates things is done in a superclass, so I don't have to write the mapping code that I wrote in the explicit cases.
+		</P>
+	
+	
+<a name="NB7"></a>
+	
+<H3>Find by ID</H3>
+		
+<P>I'll begin with the find by id method. 
+		</P>
+		
+<pre>class Mapper... 
+	public Object findObject (Long key) {
+		if (uow.isLoaded(key)) return uow.getObject(key);
+		String sql = "SELECT" + dataMap.columnList() + " FROM " + dataMap.getTableName() + " WHERE ID = ?";
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		DomainObject result = null;
+		try {
+			stmt = DB.prepare(sql);
+			stmt.setLong(1, key.longValue());
+			rs = stmt.executeQuery();
+			rs.next();
+			result = load(rs);
+		} catch (Exception e) {throw new ApplicationException (e);
+		} finally {DB.cleanUp(stmt, rs);
+		}
+        return result;
+	}
+	private UnitOfWork uow;
+	protected DataMap dataMap;
+</pre>		
+		
+<pre>class DataMap... 
+	public String columnList() {
+		StringBuffer result = new StringBuffer(" ID");
+		for (Iterator it = columnMaps.iterator(); it.hasNext();) {
+			result.append(",");
+			ColumnMap columnMap = (ColumnMap)it.next();
+			result.append(columnMap.getColumnName());
+		}
+		return result.toString();
+	}
+	public String getTableName() {
+		return tableName;
+	}
+</pre>	
+		
+<P>The select is built more dynamically than the other examples, but it's still worth preparing it in a way that allows the database session to cache it properly. If it's an issue the column list could be calculated during construction and cached, since there's no call for updating the columns during the life of the data map. For this example, unlike the others in this pattern, I'm using a <A href="unitOfWork.html" tppabs="http://martinfowler.com/isa/unitOfWork.html"><I>Unit of Work</I></A> to handle the database session. There's no particular reason to use that with metadata, I'm just  illustrating how that would work.
+		</P>
+		
+<P>As with other example I've separated the load from the find, so that we can use the same load method from other find methods.
+		</P>
+		
+<pre>class Mapper... 
+	public DomainObject load(ResultSet rs)
+			throws	InstantiationException, IllegalAccessException, SQLException
+	{
+		Long key = new Long(rs.getLong("ID"));
+		if (uow.isLoaded(key)) return uow.getObject(key);
+		DomainObject result = (DomainObject) dataMap.getDomainClass().newInstance();
+		result.setID(key);
+		uow.registerClean(result);
+		loadFields(rs, result);
+		return result;
+	}
+
+	private void loadFields(ResultSet rs, DomainObject result) throws SQLException {
+		for (Iterator it = dataMap.getColumns(); it.hasNext();) {
+			ColumnMap columnMap = (ColumnMap)it.next();
+			Object columnValue = rs.getObject(columnMap.getColumnName());
+			columnMap.setField(result, columnValue);
+		}
+	}
+</pre>		
+		
+<pre>class ColumnMap... 
+ 	public void setField(Object result, Object columnValue)  {
+		try {
+			field.set(result, columnValue);
+		} catch (Exception e) { throw new ApplicationException ("Error in setting " + fieldName, e);
+		}
+	}
+</pre>		
+		
+<P>This is a classic reflected program, we go through each of the column maps and use them to load the field in the domain object. I separated the <code>loadFields</code> method to show how we might extend this for more complicated cases. If we had a class and table where the simple assumptions of the metadata don't hold, I can just override <code>loadFields</code> in a subclass mapper to put in arbitrarily complex code. This is a common technique to use with metadata - providing a hook to override for more wacky cases. It's usually a lot easier to override wacky cases with subclasses than it is to build metadata sophisticated enough to hold a few rare special cases.
+		</P>
+		
+<P>Of course, if we have a subclass, we might as well use it to avoid downcasting.
+		</P>
+		
+<pre>class PersonMapper... 
+	public Person find(Long key) {
+		return (Person) findObject(key);
+	}
+</pre>
+	
+	
+<a name="NEE"></a>
+	
+<H3>Writing to the database</H3>
+		
+<P>For updates, I have a single update routine.
+		</P>
+		
+<pre>class Mapper... 
+	public void update (DomainObject obj) {
+		String sql = "UPDATE " + dataMap.getTableName() + dataMap.updateList() + " WHERE ID = ?";
+		PreparedStatement stmt = null;
+		try {
+			stmt = DB.prepare(sql);
+			int argCount = 1;
+			for (Iterator it = dataMap.getColumns(); it.hasNext();) {
+				ColumnMap col = (ColumnMap) it.next();
+				stmt.setObject(argCount++, col.getValue(obj));
+			}
+			stmt.setLong(argCount, obj.getID().longValue());
+			stmt.executeUpdate();
+		} catch (SQLException e) {throw new ApplicationException (e);
+		} finally {DB.cleanUp(stmt);
+		}
+	}
+</pre>		
+		
+<pre>class DataMap... 
+	public String updateList() {
+		StringBuffer result = new  StringBuffer(" SET ");
+		for (Iterator it = columnMaps.iterator(); it.hasNext();) {
+			ColumnMap columnMap = (ColumnMap)it.next();
+			result.append(columnMap.getColumnName());
+			result.append("=?,");
+		}
+		result.setLength(result.length() - 1);
+		return result.toString();
+	}
+	public Iterator getColumns() {
+		return Collections.unmodifiableCollection(columnMaps).iterator();
+	}
+</pre>		
+		
+<P>Inserts use a similar scheme.
+		</P>
+		
+<pre>class Mapper... 
+	public Long insert (DomainObject obj) {
+		String sql = "INSERT INTO " + dataMap.getTableName() + " VALUES (?" + dataMap.insertList() + ")";
+		PreparedStatement stmt = null;
+		try {
+			stmt = DB.prepare(sql);
+			stmt.setObject(1, obj.getID());
+			int argCount = 2;
+			for (Iterator it = dataMap.getColumns(); it.hasNext();) {
+				ColumnMap col = (ColumnMap) it.next();
+				stmt.setObject(argCount++, col.getValue(obj));
+			}
+			stmt.executeUpdate();
+		} catch (SQLException e) {throw new ApplicationException (e);
+		} finally {DB.cleanUp(stmt);
+		}
+		return obj.getID();
+	}
+</pre>		
+		
+<pre>class DataMap... 
+	public String insertList() {
+		StringBuffer result = new StringBuffer();
+		for (int i = 0; i &lt; columnMaps.size(); i++) {
+			result.append(",");
+			result.append("?");
+		}
+		return result.toString();
+	}
+</pre>				
+	
+	
+<a name="N10E"></a>
+	
+<H3>Multi-object finds</H3>
+		
+<P>To get back multiple objects with a query, there are a couple of routes you can take. If you want a generic query capability on the generic mapper, you can have a query that takes a SQL where clause as an argument.
+		</P>
+		
+<pre>class Mapper... 
+	public Set findObjectsWhere (String whereClause) {
+		String sql = "SELECT" + dataMap.columnList() + " FROM " + dataMap.getTableName() + " WHERE " + whereClause;
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		Set result = new HashSet();
+		try {
+			stmt = DB.prepare(sql);
+			rs = stmt.executeQuery();
+			result = loadAll(rs);
+		} catch (Exception e) {
+			throw new ApplicationException (e);
+		} finally {DB.cleanUp(stmt, rs);
+		}
+        return result;
+
+	}
+</pre>		
+		
+<pre> 
+	public Set loadAll(ResultSet rs) throws SQLException, InstantiationException, IllegalAccessException {
+		Set result = new HashSet();
+		while (rs.next()) {
+			DomainObject newObj = (DomainObject) dataMap.getDomainClass().newInstance();
+			newObj = load (rs);
+			result.add(newObj);
+		}
+		return result;
+	}
+</pre>		
+		
+<P>Your alternative is to provide special case finders on the mapper subtypes.
+		</P>
+		
+<pre>class PersonMapper... 
+	public Set findLastNamesLike (String pattern) {
+		String sql =
+				"SELECT" + dataMap.columnList() +
+				" FROM " + dataMap.getTableName() +
+				" WHERE UPPER(lastName) like UPPER(?)";
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = DB.prepare(sql);
+			stmt.setString(1, pattern);
+			rs = stmt.executeQuery();
+			return loadAll(rs);
+		} catch (Exception e) {throw new ApplicationException (e);
+		} finally {DB.cleanUp(stmt, rs);
+		}
+	}
+</pre>
+		
+<P>The great advantage of the metadata approach is that I can now add new tables and classes to my data mapping and all I have to do is to provide a <code>loadMap</code> method and any specialized finders that I may fancy.
+		</P>
+		
+	
+	
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

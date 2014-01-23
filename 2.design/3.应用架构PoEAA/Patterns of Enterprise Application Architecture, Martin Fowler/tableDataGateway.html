@@ -1,0 +1,317 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Table Data Gateway</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Table Data Gateway</H1>
+<HR>
+
+<P align="center">
+<I>An object that acts as a <A href="gateway.html" tppabs="http://martinfowler.com/isa/gateway.html"><I>Gateway</I></A> to a database table</I>
+</P>
+
+<P align="center">
+<img src="dbgateTable.gif" tppabs="http://martinfowler.com/isa/dbgateTable.gif"></P>
+
+	
+<P>It's good to keep database access code separated from the rest of an application. A simple <I>Table Data Gateway</I> holds all the SQL for accessing a single table: selects, inserts, updates and deletes. Other routine call its manipulation routines to for all changes in the database and issue queries through it's find routines, each of which passes back a suitable data structure.
+	</P>
+
+
+<H2>How it Works</H2>
+	
+<P>A <I>Table Data Gateway</I> has a simple interface, usually consisting of several find methods to get data from the database, together with update, insert, and delete methods. Each method maps the input parameters into a SQL and executes the SQL against a database connection.The <I>Table Data Gateway</I> is usually stateless, as its role is to push data back and forth. 
+	</P>
+	
+<P>The trickiest thing about a <I>Table Data Gateway</I> is how it returns information from a query. Even a simple find-by-id query will return multiple data items. In environments where you can return multiple items you can use that for a single row. However many languages only give you a single return value, and many queries will return multiple rows.
+	</P>
+	
+<P>On alternative is to return some simple data structure, such as a map. A map works, but it forces data to be copied out of the record set that comes from the database into the map. I find that using maps to pass around data is bad form, it defeats compile time checking and is not a very explicit interface - leading to bugs as people misspell what's in the map. A better alternative is to use a <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>, another object to create - but one that may well be used elsewhere.
+	</P>	
+	
+<P>To save all this you can return the <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html"><I>Record Set</I></A> that comes from the SQL query. This is conceptually messy, as ideally we would like the in-memory object to not have to know anything about the SQL interface. It may also make it difficult to substitute the database for a file if you cannot easily create record sets in your own code. However in many environments, such as .NET,  that use <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html"><I>Record Set</I></A> widely it's a very effective approach. A table based <I>Table Data Gateway</I> thus goes very well with <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A>. If all of your updates are done through the <I>Table Data Gateway</I> the returned data can be based on views rather than the actual tables, which reduces the coupling between your code and the database.
+	</P>
+	
+<P>If you're using a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> you can have the <I>Table Data Gateway</I> return the appropriate domain object. The problem with this is that you then have bidirectional dependencies between the gateway and the domain objects. Since the two are closely connected that isn't necessarily a terrible thing, but it's always something I'm reluctant to do.
+	</P>
+	
+<P>Most of the time you use <I>Table Data Gateway</I> you'll have one <I>Table Data Gateway</I> for each table in the database. For very simple cases, however, you can have a single <I>Table Data Gateway</I> that handles all the methods for all the tables.
+	</P>
+	
+
+
+<H2>When to Use it</H2>
+	
+<P>As with <A href="rowDataGateway.html" tppabs="http://martinfowler.com/isa/rowDataGateway.html"><I>Row Data Gateway</I></A> the decision to use <I>Table Data Gateway</I> is first whether to use a <A href="gateway.html" tppabs="http://martinfowler.com/isa/gateway.html"><I>Gateway</I></A> approach, and then which one to use.
+	</P>
+	
+<P>I find <I>Table Data Gateway</I> is probably the simplest database interface pattern to use, as it maps so nicely onto a database table or record type. It also makes a natural point to encapsulate the precise access logic of the data source. I use it least with <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>, because I find that <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A> gives a better isolation between the <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> and the database, and isn't that much more complex to use. 
+	</P>
+	
+<P>
+<I>Table Data Gateway</I> works particularly well with <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> where the <I>Table Data Gateway</I> produces a record set data structure for the <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> to work on. Indeed I can't really imagine any other database mapping approach for <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A>.
+	</P>
+	
+<P>Just like <A href="rowDataGateway.html" tppabs="http://martinfowler.com/isa/rowDataGateway.html"><I>Row Data Gateway</I></A>, <I>Table Data Gateway</I> is very suitable for <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s. The choice between the two really boils down on how to deal with multiple rows of data. Many people like using a <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>, but that usually seems like more work than is worthwhile, unless the same <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A> is used elsewhere. I tend to prefer <I>Table Data Gateway</I> when the result set representation is convenient for the <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> to work with.
+	</P>
+	
+<P>Interestingly it often makes sense to use <I>Table Data Gateway</I> with <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A> - having the <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A>s talk to the database via <I>Table Data Gateway</I>s. Although this makes little sense when everything is hand coded, it can be very effective when if you want to use metadata for the <I>Table Data Gateway</I>s but prefer hand code for the actual mapping to the domain objects. 
+	</P>
+	
+<P>One of the benefits of using a <I>Table Data Gateway</I>  to encapsulate data base access is that the same interface can be used both for using SQL to manipulate the database, and for using stored procedures. Indeed stored procedures themselves are often organized as a <I>Table Data Gateway</I>, that way the actual table structure is encapsulated behind insert and update stored procedures. The find procedures in this case can return views, which all helps to hide the underlying table structure.
+	</P>
+	
+
+
+<H2>Further Reading</H2>
+	
+<P>	
+<a href="http://www.amazon.com/exec/obidos/ASIN/0130648841">[Alur, Crupi, and Malks]</a> contains the <I>Data Access Object</I> pattern which is a <I>Table Data Gateway</I>. In the discussion they show returning a collection of <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>s on the query methods. It's not clear whether they see <I>Data Access Object</I> as always being table based, the intent and discussion seems to imply either <I>Table Data Gateway</I> or <A href="rowDataGateway.html" tppabs="http://martinfowler.com/isa/rowDataGateway.html"><I>Row Data Gateway</I></A>.
+	</P>
+	
+<P>I've used a different name, partly because I see this pattern as a particular usage of the more general <A href="gateway.html" tppabs="http://martinfowler.com/isa/gateway.html"><I>Gateway</I></A> concept, and felt the pattern name should reflect that. The other reason is that the term Data Access Object and it's abbreviation DAO has it's own particular meaning within the Microsoft world.
+	</P>	
+
+
+	
+<H2>Example: Person Gateway (C#)</H2>
+	
+<P>
+<I>Table Data Gateway</I> is the usual form of database access in the windows world, so it makes sense to illustrate one with C#. In doing this, however, I have to stress that this classic form of <I>Table Data Gateway</I> isn't quite the way that fits in with the .NET environment since it doesn't take advantage of the ADO.NET data set, instead it uses the Data Reader which is a cursor like interface to database records. The data reader is the right choice to manipulating larger amounts of information where you don't want to bring everything into memory in one go.
+	</P>
+	
+<P>For the example I'm using a person gateway class that connects to a person table in a database. The person gateway contains the finder code, returning ADO.NET's data reader to access the returned data. 
+	</P>
+	
+<pre>class PersonGateway... 
+		public IDataReader FindAll() {
+			String sql = "select * from person";
+			return new OleDbCommand(sql, DB.Connection).ExecuteReader();
+		}
+		public IDataReader FindWithLastName(String lastName) {
+			String sql = "SELECT * FROM person WHERE lastname = ?";
+			IDbCommand comm = new OleDbCommand(sql, DB.Connection);
+			comm.Parameters.Add(new OleDbParameter("lastname", lastName));
+			return comm.ExecuteReader();
+		}
+		public IDataReader FindWhere(String whereClause) {
+			String sql = String.Format("select * from person where {0}", whereClause);
+			return new OleDbCommand(sql, DB.Connection).ExecuteReader();
+		}
+</pre>	
+	
+<P>Almost always you'll want to pull back a bunch of rows with a reader. On a rare occasion you might want to get hold of an individual row of data with a method along these lines.
+	</P>
+	
+<pre>class PersonGateway... 
+		public Object[] FindRow (long key) {
+			String sql = "SELECT * FROM person WHERE id = ?";
+			IDbCommand comm = new OleDbCommand(sql, DB.Connection);
+			comm.Parameters.Add(new OleDbParameter("key",key));
+			IDataReader reader = comm.ExecuteReader();
+			reader.Read();
+			Object [] result = new Object[reader.FieldCount];
+			reader.GetValues(result);
+			reader.Close();
+			return result;
+		}
+</pre>	
+	
+<P>The update and insert methods receive the necessary data in arguments and invokes the appropriate SQL routines.
+	</P>
+	
+<pre>class PersonGateway... 
+		public void Update (long key, String lastname, String firstname, long numberOfDependents){
+			String sql = "UPDATE person SET lastname = ?, firstname = ?, numberOfDependents = ? WHERE id = ?";
+			IDbCommand comm = new OleDbCommand(sql, DB.Connection);
+			comm.Parameters.Add(new OleDbParameter ("last", lastname));
+			comm.Parameters.Add(new OleDbParameter ("first", firstname));
+			comm.Parameters.Add(new OleDbParameter ("numDep", numberOfDependents));
+			comm.Parameters.Add(new OleDbParameter ("key", key));
+			comm.ExecuteNonQuery();
+		}
+</pre>	
+	
+<pre>class PersonGateway... 
+		public long Insert(String lastName, String firstName, long numberOfDependents) {
+			String sql = "INSERT INTO person VALUES (?,?,?,?)";
+			long key = GetNextID();
+			IDbCommand comm = new OleDbCommand(sql, DB.Connection);
+			comm.Parameters.Add(new OleDbParameter ("key", key));
+			comm.Parameters.Add(new OleDbParameter ("last", lastName));
+			comm.Parameters.Add(new OleDbParameter ("first", firstName));
+			comm.Parameters.Add(new OleDbParameter ("numDep", numberOfDependents));
+			comm.ExecuteNonQuery();
+			return key;
+		}
+</pre>	
+	
+<P>The deletion method just needs a key
+	</P>
+	
+<pre>class PersonGateway... 
+		public void Delete (long key) {
+			String sql = "DELETE FROM person WHERE id = ?";
+			IDbCommand comm = new OleDbCommand(sql, DB.Connection);
+			comm.Parameters.Add(new OleDbParameter ("key", key));
+			comm.ExecuteNonQuery();
+		}
+</pre>		
+
+
+	
+<H2>Example: Using ADO.NET Data Sets (C#)</H2>
+	
+<P>The generic <I>Table Data Gateway</I>  works with pretty much any kind of platform since it is nothing but a wrapper for SQL statements. When you use .NET you'll use data sets more often, but <I>Table Data Gateway</I> is still useful, although it comes in a different form.
+	</P>
+	
+<P>A data set needs data adapters to load the data into the data set and do updates to the data. So I found it useful to define a holder for the data set and adapters that load and save the data. A gateway then uses the holder to store both the data sets and the adapters. Much of this behavior is generic, and can be done in a superclass.
+	</P>
+	
+<A name="dateSetGateway.gif"></A><img align="top" src="dateSetGateway.gif" tppabs="http://martinfowler.com/isa/dateSetGateway.gif"><P>
+<I>Figure 1: Class diagram of data set oriented gateway and the supporting data holder</I>
+</P>
+	
+<P>The holder stores a data set and a collection of adapters indexed by the name of the table.
+	</P>
+	
+<pre>class DataSetHolder... 
+		public DataSet Data = new DataSet();
+		private Hashtable DataAdapters = new Hashtable();
+</pre>			
+	
+<P>The gateway stores the holder and exposes the data set for its clients.
+	</P>
+	
+<pre>class DataGateway... 
+		public DataSetHolder Holder;
+		public DataSet Data {
+			get {return Holder.Data;}
+		}
+</pre>			
+	
+<P>The gateway can act on an existing holder, or create a new one.
+	</P>
+	
+<pre>class DataGateway... 
+		protected DataSetGateway() {
+			Holder = new DataSetHolder();
+		}
+		protected DataSetGateway(DataSetHolder holder) {
+			this.Holder = holder;
+		}
+</pre>			
+	
+<P>The find behavior can work a bit differently here. Since a data set is a container for table oriented data, and one data set can contain data from several tables. As a result it's better to load data into a data set. 
+	</P>
+	
+<pre>class DataGateway... 
+		public void LoadAll() {
+			String commandString = String.Format("select * from {0}", TableName);
+			Holder.FillData(commandString, TableName);
+		}
+		public void LoadWhere(String whereClause) {
+			String commandString = 
+				String.Format("select * from {0} where {1}", TableName,whereClause);
+			Holder.FillData(commandString, TableName);
+		}
+		abstract public String TableName {get;}
+</pre>			
+	
+<pre>class PersonGateway... 
+		public override String TableName {
+			get {return "Person";}
+		}
+</pre>			
+	
+<pre>class DataSetHolder... 
+		public void FillData(String query, String tableName) {
+			if (DataAdapters.Contains(tableName)) throw new MutlipleLoadException();
+			OleDbDataAdapter da = new OleDbDataAdapter(query, DB.Connection);
+			OleDbCommandBuilder builder = new OleDbCommandBuilder(da);
+			da.Fill(Data, tableName);
+			DataAdapters.Add(tableName, da);
+		}
+</pre>			
+	
+<P>To update data you manipulate the data set directly in some client code.
+	</P>
+	
+<pre> 
+			person.LoadAll();
+			person[key]["lastname"] = "Odell";
+			person.Holder.Update();
+</pre>			
+	
+<P>The gateway can have an indexer to get make it easier to get to specific rows.
+	</P>
+	
+<pre>class DataGateway... 
+		public DataRow this[long key] {
+			get {
+				String filter = String.Format("id = {0}", key);
+				return Table.Select(filter)[0];  
+			}
+		}
+		public override DataTable Table {
+			get { return Data.Tables[TableName];}
+		}
+</pre>			
+	
+<P>The update triggers update behavior on the holder.
+	</P>
+	
+<pre>class DataSetHolder... 
+		public void Update() {
+			foreach (String table in DataAdapters.Keys)
+				((OleDbDataAdapter)DataAdapters[table]).Update(Data, table);
+		}
+		public DataTable this[String tableName] {
+			get {return Data.Tables[tableName];}
+		}
+</pre>			
+	
+<P>Insertion can be done much the same way: get a data set, insert a new row to the data table, and fill in each column. However it can be useful to use an update method to do the insertion in one call.
+	</P>
+	
+<pre>class DataGateway... 
+		public long Insert(String lastName, String firstname, int numberOfDependents) {
+			long key = new PersonGatewayDS().GetNextID();
+			DataRow newRow = Table.NewRow();
+			newRow["id"] = key;
+			newRow["lastName"] = lastName;
+			newRow["firstName"] = firstname;
+			newRow["numberOfDependents"] = numberOfDependents;
+			Table.Rows.Add(newRow);
+			return key;
+		}
+</pre>			
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Value Object</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Value Object</H1>
+<HR>
+
+<P align="center">
+<I>A small simple object, like a money or date range, whose equality is not based on identity.</I>
+</P>
+
+	
+<P>In dealing with object systems of various kinds, I've found it useful to distinguish between reference objects and <I>Value Object</I>s. Of these two a <I>Value Object</I> is usually a small object, similar to the primitive types present in many languages that are not purely object-oriented.
+	</P>
+
+
+<H2>How it Works</H2>
+	
+<P>Defining the difference between a reference object and <I>Value Object</I> is often a tricky thing. In a broad sense we like to think of it that <I>Value Object</I> are small objects, such as a Money object or a date; while reference objects are larger things like orders and customers. Such a definition is handy, but annoyingly informal.
+	</P>
+	
+<P>The key difference between a reference and value object lies in how they deal with equality. A reference object uses identity as the basis for equality. This may be the identity within the programming system, such as the built in identity of OO programming languages; or it may be some kind of ID number, such as the primary key in a relational database.
+	</P>
+	
+<P>A <I>Value Object</I> bases it's notion of equality on field values within the class. So two date objects may be the same if their day, month, and year values are the same. 
+	</P>
+	
+<P>The difference manifests itself in how you deal with them. Since <I>Value Object</I>s are small and easily created, they are often passed around by value instead of by reference. You don't really care about how many March 18 2001 objects there are in your system. Nor do you care if two objects share the same physical date object, or whether they have different yet equal copies.
+	</P>
+	
+<P>Most languages don't have any special facility for value objects. In these cases for value objects to work properly it's a very good idea to make any <I>Value Object</I> immutable. That is once created, none of its fields should change. The reason for this is to avoid aliasing bugs. An aliasing bug occurs when two objects share the same value object and one of the owners changes the values in the value. So if Martin has a hire date of Mar 18 and we know Cindy was hired on the same day, we may set Cindy's hire date to be the same as Martin's. If Martin then changes the month in his hire date to May, Cindy's hire date changes too. Whether it's correct or not, it isn't what people would expect. Usually with small values like this people would expect to change a hire date by replacing the existing date object with a new object. Making <I>Value Object</I>s immutable fulfills that expectation.
+	</P>
+	
+<H3 style="margin-left: 2em; margin-right: 2em">.NET</H3>
+		
+<P style="margin-left: 2em; margin-right: 2em">A pleasant exception to this is .NET which has a first class treatment of <I>Value Object</I>. In C# objects are marked as <I>Value Object</I> by declaring them as a struct instead as a class.
+		</P>
+	
+	
+<P>
+<I>Value Object</I>s shouldn't be persisted as complete records. Instead use <A href="aggregateMapping.html" tppabs="http://martinfowler.com/isa/aggregateMapping.html"><I>Embedded Value</I></A> or <A href="serializedLob.html" tppabs="http://martinfowler.com/isa/serializedLob.html"><I>Serialized LOB</I></A>. Since <I>Value Object</I>s are small <A href="aggregateMapping.html" tppabs="http://martinfowler.com/isa/aggregateMapping.html"><I>Embedded Value</I></A> is usually the best choice, since it also allows SQL querying using the data in the <I>Value Object</I>.
+	</P>	
+	
+<P>If you are doing a lot of binary serializing you may find that optimizing the serialization of <I>Value Object</I>s can have a big impact on improving performance, particularly in languages like Java that don't have special treatment for <I>Value Object</I>s.
+	</P>
+	
+	
+<P>For an example of a <I>Value Object</I> see <A href="money.html" tppabs="http://martinfowler.com/isa/money.html"><I>Money</I></A>.
+	</P>
+	
+
+
+<H2>When to Use it</H2>
+	
+<P>Treat something as a value object when you are basing equality on something other than an identity. It's worth considering this for any small object that is easy to create. 
+	</P>
+	
+<a name="N62"></a>
+	
+<H3>Name Collisions</H3>
+		
+<P>I've seen <I>Value Object</I> used in this style for quite a time. Sadly recently I've seen people use the term 'value object' to mean <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>, something that caused a storm in the teacup of the patterns community. This is just one of these clashes over names that happen all the time in this business. I continue to use <I>Value Object</I> in this way in this text. If nothing else this allows me to be consistent with my own previous writings!
+		</P>
+	
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Special Case</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Special Case</H1>
+<HR>
+
+<P align="center">
+<I>A subclass which provides special behavior for particular cases.</I>
+</P>
+
+<P align="center">
+<img src="specialCaseSketch.gif" tppabs="http://martinfowler.com/isa/specialCaseSketch.gif"></P>
+
+	
+<P>Null's make awkward things in object-oriented programs because they defeat polymorphism. Usually you can invoke foo freely on a variable reference of a given type without worrying about whether the item in the type is of the exact type or a subclass. With a strongly typed language you can even have the compiler check that the call is correct. However since a variable can contain null, you may run into a runtime error by invoking a message on null, which will get you a nice friendly stack trace.
+	</P>	
+	
+<P>If it's possible for a variable to be null, you have to remember to surround it with null test code so you remember do the right thing if a null is present. Often the right thing is same in lots of contexts, so you end up writing similar code in lots of places - which is the sin of duplicate code.
+	</P>	
+	
+<P>Nulls are a common problem of this kind, but others crop up regularly. In number systems you have to deal with infinity, which has special rules for things like addition that break the usual invariants of real numbers. One of my earliest examples in business software was a utility customer who wasn't fully known - referred to as "occupant". All of these imply altered behavior to the usual behavior of the type.
+	</P>	
+	
+<P>Instead of returning null, or some odd value, return a <I>Special Case</I> that has the same interface as what the caller expects.
+	</P>	
+
+
+<H2>How it Works</H2>
+	
+<P>The basic idea is to create a subclass to handle the <I>Special Case</I>. So if you have a customer object and you want to avoid null checks, you make a null customer object. Take all of the methods for customer and override them in the <I>Special Case</I> to provide some harmless behavior. Then whenever you would have a null put in an instance of null customer instead.
+	</P>
+	
+<P>There's usually not any reason to distinguish between different instances of null customer, so you can often implement a <I>Special Case</I> with a flyweight <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612">[Gang of Four]</a>. This isn't true all the time. For a utility you can accumulate charges against an occupant customer even you can't do much of the billing, so it's important to keep your occupants separate.
+	</P>
+	
+<P>People often use a null to mean different things. A null customer may mean there isn't a customer or it may mean that there is a customer but we don't know who it is. Rather than just use a null customer, consider having separate <I>Special Case</I>s for missing customer and unknown customer.
+	</P>
+	
+<P>A common way for a <I>Special Case</I> to override methods is to return another <I>Special Case</I>. So if you ask an unknown customer for his last bill, you may well get an unknown bill.
+	</P>	
+
+
+<H2>When to Use it</H2>
+	
+<P>Use <I>Special Case</I> whenever you have multiple places in the system that do the same behavior after a conditional check for a particular instance of this class, or same behavior after a null check.
+	</P>
+
+
+
+<H2>Further Reading</H2>
+	
+<P>I haven't seen <I>Special Case</I> written up as a pattern yet, but Null Object has been written up in <a href="">[Woolf]</a>. If you'll pardon the unresistable punnery I see Null Object as special case of <I>Special Case</I>.
+	</P>
+
+
+
+<H2>Example: A Simple Null Object (C#)</H2>
+	
+<P>Here's a simple example of using <I>Special Case</I> for its common use as a null object.
+	</P>
+	
+<P>We have a regular employee.
+	</P>
+	
+<pre>class Employee... 
+		public virtual String Name {
+			get {return _name;}
+			set {_name = value;}
+		}
+		private String _name;
+		public virtual Decimal GrossToDate {
+			get {return calculateGrossFromPeriod(0);}
+		}
+		public virtual Contract Contract {
+			get {return _contract;}
+		}
+		private Contract _contract;
+</pre>	
+	
+<P>The features of the class could be overridden by a null employee
+	</P>
+	
+<pre>class NullEmployee : Employee, INull... 
+		public override String Name {
+			get {return "Null Employee";}
+			set {}
+		}
+		public override Decimal GrossToDate {
+			get {return 0m;}
+		}
+		public override Contract Contract {
+			get {return Contract.NULL;}
+		}
+</pre>	
+	
+<P>Notice how when you ask a null employee for its contract you get a null contract back.
+	</P>
+	
+<P>The default values here avoid a lot of null tests if the null tests end up with the same null values. The repeated null values are handled by the null object by default. You can also test for nullness explicitly either by giving customer an isNull method or by using a type test for a marker interface.
+	</P>
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

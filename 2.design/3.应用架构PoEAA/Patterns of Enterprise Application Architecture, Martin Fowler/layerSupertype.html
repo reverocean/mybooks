@@ -1,0 +1,87 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Layer Supertype</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Layer Supertype</H1>
+<HR>
+
+<P align="center">
+<I>A type that acts as the supertype for all types in its layer</I>
+</P>
+
+	
+<P>Often all the objects in a layer will have some common methods that you don't want to have duplicated throughout the system. So you can move all of this behavior into a common <I>Layer Supertype</I>.
+	</P>	
+
+
+<H2>How it Works</H2>
+	
+<P>
+<I>Layer Supertype</I> is a simple idea that leads to a very short pattern. All you need is a superclass for all the objects in a layer. For example all the domain objects in a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> might have a superclass called Domain Object. Common features, such as the storage and handling of <A href="identityField.html" tppabs="http://martinfowler.com/isa/identityField.html"><I>Identity Field</I></A>s can go there. Similarly all <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A>s in the mapping layer may have a superclass which can rely on the fact that all the domain objects have a common superclass.
+	</P>
+	
+<P>If you have more than one kind of object in a layer, then it's useful to have more than one <I>Layer Supertype</I>.
+	</P>
+
+
+<H2>When to Use it</H2>
+	
+<P>Use <I>Layer Supertype</I> when you have common features from all objects in a layer. Often I do this automatically now, because I so often make use of common features.
+	</P>
+
+
+	
+<H2>Example: Domain Object (Java)</H2>
+	
+<P>Domain objects can have a common superclass for id handling.
+	</P>
+	
+<pre>class DomainObject... 
+	private Long ID;
+
+	public Long getID() {
+		return ID;
+	}
+
+	public void setID(Long ID) {
+		Assert.notNull("Cannot set a null ID", ID);
+		this.ID = ID;
+	}
+
+	public DomainObject(Long ID) {
+		this.ID = ID;
+	}
+
+	public DomainObject() {
+	}
+</pre>
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

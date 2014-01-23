@@ -1,0 +1,397 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Association Table Mapping</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Association Table Mapping</H1>
+<HR>
+
+<P align="center">
+<I>Save an association as a table with foreign keys to the tables that are linked by the association.</I>
+</P>
+
+<P align="center">
+<img src="associationTableSketch.gif" tppabs="http://martinfowler.com/isa/associationTableSketch.gif"></P>
+
+	
+<P>Objects can handle multi-valued fields quite easily by using collections as field values. Relational databases don't have this feature and are constrained to single-valued fields only. When you're mapping a one-to-many association you can handle this using <A href="foreignKeyMapping.html" tppabs="http://martinfowler.com/isa/foreignKeyMapping.html"><I>Foreign Key Mapping</I></A>, essentially to use a foreign key for the single-valued end of the association. But a many-to-many association can't do this because there isn't a single-valued end to hold the foreign key.
+	</P>	
+	
+<P>The answer is the classic resolution used by relational data people for decades: create an extra table to record the relationship. We can then use <I>Association Table Mapping</I> to map the multi-valued field to this link table.
+	</P>
+	
+
+
+<H2>How it Works</H2>
+	
+<P>The basic idea behind <I>Association Table Mapping</I> is to use a link table to store the association. The link table has only the foreign key ids for the two tables that are linked together. It has one row for each pair of objects that are associated.
+	</P>
+	
+<P>The link table has no corresponding in-memory object. As a result it has no ID. The primary key of the link table is the compound of the two primary keys of the tables that are associated together.
+	</P>	
+	
+<P>To load data from the link table you, in simple terms, peform two queries. Consider loading the skills for an employee. In this case you do, at least conceptually, queries in two stages. The first stage queries the skillsEmployees table to find all the rows that link to the employee you want. Then for each row in the link table you find the skill object for the related id.
+	</P>
+	
+<P>If all this information is already in memory, this scheme works fine. If it isn't, this scheme can be horribly expensive in queries, since you'll do a query for each skill that's in the link table. You can avoid this cost by joining the skills table to the link table which allows you to get all the data in a single query, albeit at the cost of making the mapping a bit more complicated. 
+	</P>
+	
+<P>Updating the link data involves many of the same issues as updating a many valued field. Fortunately the matter is made much easier since you can in many ways treat the link table in a similar way to <A href="dependentObject.html" tppabs="http://martinfowler.com/isa/dependentObject.html"><I>Dependent Mapping</I></A>s. No other table should refer to the link table, so you can freely create and destroy links as you need them.
+	</P>	
+
+
+<H2>When to Use it</H2>
+	
+<P>The canonical case for <I>Association Table Mapping</I> is a many-to-many association, since there's not really any alternatives for that situation. 
+	</P>
+	
+<P>
+<I>Association Table Mapping</I> can also be used for any other form of association. It's more complex to use than <A href="foreignKeyMapping.html" tppabs="http://martinfowler.com/isa/foreignKeyMapping.html"><I>Foreign Key Mapping</I></A>, and involves an extra join - so it's not usually the right choice. However <I>Association Table Mapping</I> is an option if you have tables that you need to link but can't be altered, or if that's the way the tables are in an existing database schema.
+	</P>	
+
+
+	
+<H2>Example: Employees and Skills (C#)</H2>
+	
+<P>Here's a simple example using the sketch's model. We have an employee class with a collection of skills where each skill can appear for more than one employee.
+	</P>
+	
+<pre>class Employee... 
+		public IList Skills {
+			get {return ArrayList.ReadOnly(skillsData);}
+			set {skillsData = new ArrayList(value);}
+		}
+		public void AddSkill (Skill arg) {
+			skillsData.Add(arg);
+		}
+		public void RemoveSkill (Skill arg) {
+			skillsData.Remove(arg);
+		}
+		private IList skillsData = new ArrayList();
+</pre>
+	
+<P>To load an employee from the database, we need to pull in the skills using an employee mapper. Each employee mapper class has a find method that creates an employee object. All mappers are subclasses of the abstract mapper class that pulls together common services for the mappers.
+	</P>
+	
+<pre>class EmployeeMapper... 
+		public Employee Find(long id) {
+			return (Employee) AbstractFind(id);
+		}
+</pre>
+	
+<pre>class AbstractMapper... 
+		protected DomainObject AbstractFind(long id) {
+			Assert.True (id != DomainObject.PLACEHOLDER_ID);
+			DataRow row = FindRow(id);
+			return (row == null) ? null : Load(row);
+		}
+		protected DataRow FindRow(long id) {
+			String filter = String.Format("id = {0}", id);
+			DataRow[] results = table.Select(filter); 
+			return (results.Length == 0) ? null : results[0];
+		}
+		protected DataTable table {
+			get {return dsh.Data.Tables[TableName];}
+		}
+		public DataSetHolder dsh;
+		abstract protected String TableName {get;}
+</pre>
+	
+<pre>class EmployeeMapper... 
+		protected override String TableName { 
+			get {return "Employees";}
+		}
+</pre>
+	
+<P>The data set holder is a simple object that contains an ADO.NET data set and the relevant adaptors to save it to the database.
+	</P>
+	
+<pre>class DataSetHolder... 
+		public DataSet Data = new DataSet();
+		private Hashtable DataAdapters = new Hashtable();
+</pre>
+	
+<P>To make this example simple, indeed simplistic,  we'll assume the data set has already been loaded with all the data we might need.
+	</P>
+	
+<P>The find method calls load methods to load data for the employee.
+	</P>
+	
+<pre>class AbstractMapper... 
+		protected DomainObject Load (DataRow row) {
+			long id = (int) row ["id"];
+			if (identityMap[id] != null) return (DomainObject) identityMap[id];
+			else {
+				DomainObject result = CreateDomainObject();
+				result.Id = id;
+				identityMap.Add(result.Id, result);
+				doLoad(result,row);
+				return result;
+			}
+		}
+		abstract protected DomainObject CreateDomainObject();
+		private IDictionary identityMap = new Hashtable();
+		abstract protected void doLoad (DomainObject obj, DataRow row);
+</pre>
+	
+<pre>class EmployeeMapper... 
+		protected override void doLoad (DomainObject obj, DataRow row) {
+			Employee emp = (Employee) obj;
+			emp.Name = (String) row["name"];
+			loadSkills(emp);
+		}
+</pre>
+	
+<P>Loading the skills is sufficiently awkward to demand a separate method to do the work.
+	</P>
+	
+<pre>class EmployeeMapper... 
+		private IList loadSkills (Employee emp) {
+			DataRow[] rows = skillLinkRows(emp);
+			IList result = new ArrayList();
+			foreach (DataRow row in rows) {
+				long skillID = (int)row["skillID"];
+				emp.AddSkill(MapperRegistry.Skill.Find(skillID));
+			}
+			return result;
+		}
+		private DataRow[] skillLinkRows(Employee emp) {
+			String filter = String.Format("employeeID = {0}", emp.Id);
+			return skillLinkTable.Select(filter);
+		}
+		private DataTable skillLinkTable {
+			get {return dsh.Data.Tables["skillEmployees"];}
+		}
+</pre>
+	
+<P>To handle changes in skills information there is an update method on the abstract mapper. 
+	</P>
+	
+<pre>class AbstractMapper... 
+		public virtual void Update (DomainObject arg) {
+			Save (arg, FindRow(arg.Id));
+		}
+		abstract protected void Save (DomainObject arg, DataRow row);
+</pre>
+	
+<P>The update method calls a save method in the subclass.
+	</P>
+	
+<pre>class EmployeeMapper... 
+		protected override void Save (DomainObject obj, DataRow row) {
+			Employee emp = (Employee) obj;
+			row["name"] = emp.Name;
+			saveSkills(emp);
+		}
+</pre>
+	
+<P>Again I've made a separate method for saving the skills.
+	</P>
+	
+<pre>class EmployeeMapper... 
+		private void saveSkills(Employee emp) {
+			deleteSkills(emp);
+			foreach (Skill s in emp.Skills) {
+				DataRow row = skillLinkTable.NewRow();
+				row["employeeID"] = emp.Id;
+				row["skillID"] = s.Id;
+				skillLinkTable.Rows.Add(row);
+			}			
+		}
+		private void deleteSkills(Employee emp) {
+			DataRow[] skillRows = skillLinkRows(emp);
+			foreach (DataRow r in skillRows) r.Delete();
+		}
+</pre>
+	
+<P>The logic here does the simple thing of deleting all existing link table rows and creating new ones. This saves me having to figure out which ones have been added and deleted. 
+	</P>
+
+
+
+
+<H2>Example: Albums, tracks and perfomers (Java)</H2>
+	
+<P>One of the nice things about ADO.NET is that it allows me to discuss the basics of an object-relational mapping without getting into the sticky details of minimizing queries. With other relational mapping schemes you are closer to the SQL and have to take much of that into account.
+	</P>
+	
+<P>For this example we'll look at reading in data for the classes in  Figure <A href="#performersClass.gif">1</A>.
+	</P>
+	
+<A name="performersClass.gif"></A><img align="top" src="performersClass.gif" tppabs="http://martinfowler.com/isa/performersClass.gif"><P>
+<I>Figure 1: </I>
+</P>
+	
+<P>If we want to load an album, we want to load all the tracks on that album. As we load each track, we want to load all of the performers for that track. 
+	</P>
+	
+<A name="performers-seq2.gif"></A><img align="top" src="performers-seq2.gif" tppabs="http://martinfowler.com/isa/performers-seq2.gif"><P>
+<I>Figure 2: Finding the performers for an album with a single SQL call</I>
+</P>
+	
+<P>I'll begin by looking at the logic for finding an album.
+	</P>
+	
+<pre>class AlbumMapper... 
+	public Album find(Long id) {
+		return (Album) abstractFind(id);
+	}
+
+	protected String findStatement() {
+		return "select ID, title, artistID from albums where ID = ?";
+	}
+</pre>				
+	
+<pre>class AbstractMapper... 
+	abstract protected String findStatement();
+	protected Map loadedMap = new HashMap();
+
+	protected DomainObject abstractFind(Long id) {
+		DomainObject result = (DomainObject) loadedMap.get(id);
+		if (result != null) return result;
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = DB.prepare(findStatement());
+			stmt.setLong(1, id.longValue());
+			rs = stmt.executeQuery();
+			rs.next();
+			result = load(rs);
+			return result;
+		} catch (SQLException e) {
+			throw new ApplicationException(e);
+		} finally {cleanUp(stmt, rs);
+		}
+	}
+
+</pre>				
+	
+<P>The album loads its data and also loads the tracks. 
+	</P>
+	
+<pre>class AbstractMapper... 
+	protected DomainObject load(ResultSet rs) throws SQLException {
+		Long id = new Long(rs.getLong("id"));
+		if (loadedMap.containsKey(id)) return (DomainObject) loadedMap.get(id);
+		DomainObject result = doLoad(id, rs);
+		loadedMap.put(id, result);
+		return result;
+	}
+
+	abstract protected DomainObject doLoad(Long id, ResultSet rs) throws SQLException;
+</pre>				
+	
+<pre>class AlbumMapper... 
+	protected DomainObject doLoad(Long id, ResultSet rs) throws SQLException {
+		String title = rs.getString(2);
+		long artistID = rs.getLong(3);
+		Artist artist = FinderRegistry.artist().find(artistID);
+		Album result = new Album(id, title, artist);
+		result.setTracks(FinderRegistry.track().findForAlbum(id));
+		return result;
+	}
+</pre>				
+	
+	
+<P>To load the tracks it uses a particular finder to find the tracks for the album.
+	</P>
+	
+<pre>class TrackMapper... 
+	public static final String findForAlbumStatement =
+			"SELECT ID, seq, albumID, title " +
+			"FROM tracks " +
+			"WHERE albumID = ? ORDER BY seq";
+
+	public List findForAlbum(Long albumID) {
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = DB.prepare(findForAlbumStatement);
+			stmt.setLong(1, albumID.longValue());
+			rs = stmt.executeQuery();
+			List result = new ArrayList();
+			while (rs.next())
+				result.add(load(rs));
+			return result;
+		} catch (SQLException e) {
+			throw new ApplicationException(e);
+		} finally {cleanUp(stmt, rs);
+		}
+	}
+</pre>				
+	
+<P>Loading the track data occurs in the load method.
+	</P>
+	
+<pre>class TrackMapper... 
+	protected DomainObject doLoad(Long id, ResultSet rs) throws SQLException {
+		String title = rs.getString("title");
+		Track result = new Track(id, title);
+		result.setPerformers(findPerformers(id));
+		return result;
+	}
+</pre>				
+	
+<P>There's a separate method for loading the performers. This invokes the query on the link table.
+	</P>
+	
+<pre>class TrackMapper... 
+	private static final String findPerformersStatement =
+		"SELECT " + ArtistMapper.COLUMN_LIST +
+		" FROM artist_plays_tracks apt, artists art " +
+		" WHERE apt.trackID = ? AND apt.artistId = art.id  " +
+		" ORDER BY apt.artistID";
+
+	public List findPerformers(Long trackID) {
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = DB.prepare(findPerformersStatement);
+			stmt.setLong(1, trackID.longValue());
+			rs = stmt.executeQuery();
+			List result = new ArrayList();
+			while (rs.next()) {
+				ArtistMapper artistMapper = (ArtistMapper) FinderRegistry.artist();
+				result.add(artistMapper.load(rs));
+			}
+			return result;
+		} catch (SQLException e) {
+			throw new ApplicationException(e);
+		} finally {cleanUp(stmt, rs);
+		}
+	}
+</pre>				
+	
+<P>Since this method invokes the load method on the artist mapper, it gets the list of columns to return from the artist mapper class. That way the columns and the load method stay in sync.
+	
+	</P>
+			
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

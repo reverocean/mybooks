@@ -1,0 +1,362 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Concrete Table Inheritance</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Concrete Table Inheritance</H1>
+<HR>
+
+<P align="center">
+<I>Represent an inheritance hierarchy of classes with one table per concrete class in the hierarchy. </I>
+</P>
+
+<P align="center">
+<img src="leafInheritanceTableSketch.gif" tppabs="http://martinfowler.com/isa/leafInheritanceTableSketch.gif"></P>
+
+<H2>How it Works</H2>
+	
+<P>
+<I>Concrete Table Inheritance</I> uses one database table for each concrete class in the hierarchy. Each table contains columns for the concrete class and all its ancestors. As a result any fields in a superclass are duplicated across the tables of the subclasses. 
+	</P>
+	
+<P>As with all of these inheritance schemes the basic behavior uses <A href="inheritanceMappers.html" tppabs="http://martinfowler.com/isa/inheritanceMappers.html"><I>Inheritance Mappers</I></A>. 
+	</P>
+	
+<P>You need to pay attention to the keys with this scheme. Punningingly the key thing to do is to ensure that keys are not just unique to a table, but also unique to all the tables in a hierarchy.  The classic case of where you need this is if you have a collection of players and you are using <A href="identityField.html" tppabs="http://martinfowler.com/isa/identityField.html"><I>Identity Field</I></A>. If keys can be duplicated between concrete tables you'll get multiple rows for a particular key value. You thus need a key allocation system that keeps track of key usage across the tables, it also means you can't rely on the database's primary key uniqueness mechanism. 
+	</P>
+	
+<P>This becomes particularly awkward if you are hooking up to databases that are used by other systems. In many of these cases you can't guarantee key uniqueness across tables. In this situation you either have to avoid using superclass fields or do a compound key that involves a table identifier.
+	</P>
+	
+<P>An example of avoiding superclass fields is to use separate footballer, cricketer, and bowler collections as fields instead of a player collection. You can still have a player collection in an interface, but you have to concatenate the fields together to do this.
+	</P>
+	
+<P>For compound keys you need a special key object to use as your id field for <A href="identityField.html" tppabs="http://martinfowler.com/isa/identityField.html"><I>Identity Field</I></A>. This key would use both the primary key of the table and the table name to determine uniqueness.
+	</P>
+	
+<P>Related to this is problems with using referential integrity in the database. Consider an object model like  Figure <A href="#charityFunctionDomain.gif">1</A>. To implement this in the database you need a link table that contains foreign key columns for the charity function and the player. The problem is that there's no table for the player. As a result you can't put together a referential integrity constraint for the foreign key field that takes either footballers or cricketers. You either have to ignore the referential integrity, or use multiple link tables, one for each of the actual tables in the database. On top of this there's also problems if you can't guarantee key uniqueness.
+	</P>
+	
+<A name="charityFunctionDomain.gif"></A><img align="top" src="charityFunctionDomain.gif" tppabs="http://martinfowler.com/isa/charityFunctionDomain.gif"><P>
+<I>Figure 1: </I>
+</P>
+	
+<P>If you are searching for players with a select statement, you need to look at all concrete tables to see which ones contains the appropriate value. This leads to multiple queries to pull back a single row of data. While this is easy to program, it can hurt performance. You don't suffer the performance hit when you know the class you need, but you do have to prefer to use the concrete class to improve performance. 
+	</P>
+	
+<P>The pattern is often referred to as something along the lines of <B>leaf table inheritance</B>. Some people prefer a variation where you have one table per leaf class, instead of one table per concrete class. If you don't have any concrete superclasses in the hierarchy this ends up as the same thing. Even if you do have concrete superclasses the difference is pretty minor.
+	</P>
+
+
+
+<H2>When to Use it</H2>
+	
+<P>When figuring out how to map inheritance, <I>Concrete Table Inheritance</I>, <A href="classTableInheritance.html" tppabs="http://martinfowler.com/isa/classTableInheritance.html"><I>Class Table Inheritance</I></A> and <A href="singleTableInheritance.html" tppabs="http://martinfowler.com/isa/singleTableInheritance.html"><I>Single Table Inheritance</I></A> are the alternatives.
+	</P>
+	
+<P>The strengths of <I>Concrete Table Inheritance</I> are:
+	</P>
+	
+<UL>
+<LI style="">Each table is self contained and doesn't have any irrelevant fields. As a result it makes good sense when used by other applications that aren't using the objects.</LI>
+<LI style="">There's no joins to do when reading the data from the concrete mappers.</LI>
+<LI style="">Each table is only accessed when that class is accessed, which can spread the access load.</LI>
+</UL>
+		
+	
+	
+<P>The weaknesses of <I>Concrete Table Inheritance</I> are
+	</P>
+	
+<UL>
+<LI style="">Primary keys can be a pain to handle.</LI>
+<LI style="">Can't enforce database relationships to abstract classes</LI>
+<LI style="">If the fields on the domain classes are pushed up or down the hierarchy, you have to alter the table definitions. You don't have to do as much alteration as with <A href="classTableInheritance.html" tppabs="http://martinfowler.com/isa/classTableInheritance.html"><I>Class Table Inheritance</I></A> but you can't ignore this as you can with <A href="singleTableInheritance.html" tppabs="http://martinfowler.com/isa/singleTableInheritance.html"><I>Single Table Inheritance</I></A>.</LI>
+<LI style="">If a superclass field changes, you need to change each table that has this field, since the superclass fields are duplicated across the tables.</LI>
+<LI style="">A find on the superclass forces you to check all the tables, which leads to multiple database accesses (or a weird join.)</LI>
+</UL>
+	
+		
+	
+	
+	
+<P>Remember that the trio of inheritance patterns can coexist in a single hierarchy. So you might use <I>Concrete Table Inheritance</I> for one or two subclasses and <A href="singleTableInheritance.html" tppabs="http://martinfowler.com/isa/singleTableInheritance.html"><I>Single Table Inheritance</I></A> for the rest.
+	</P>	
+	
+
+
+
+<H2>Example: Concrete Players (C#)</H2>
+	
+<P>Here I'll show and implementation for  the sketch. As with all the inheritance examples in this chapter, I'm using the basic design of classes from <A href="inheritanceMappers.html" tppabs="http://martinfowler.com/isa/inheritanceMappers.html"><I>Inheritance Mappers</I></A>.  Figure <A href="#inheritanceMappersSketch.gif">2</A> shows the basic design.
+	</P>
+	
+<A name="inheritanceMappersSketch.gif"></A><img align="top" src="inheritanceMappersSketch.gif" tppabs="http://martinfowler.com/isa/inheritanceMappersSketch.gif"><P>
+<I>Figure 2: The generic class diagram of <A href="inheritanceMappers.html" tppabs="http://martinfowler.com/isa/inheritanceMappers.html"><I>Inheritance Mappers</I></A></I>
+</P>
+	
+<P>Each mapper is linked to the database table that is the source of the data. In ADO.NET a data set holds the data table. 
+	</P>
+	
+<pre>class Mapper... 
+		public Gateway Gateway;
+		private IDictionary identityMap = new Hashtable();
+		public Mapper (Gateway gateway) {
+			this.Gateway = gateway;
+		}
+		private DataTable table {
+			get {return Gateway.Data.Tables[TableName];}
+		}
+		abstract public String TableName {get;}
+</pre>	
+	
+<P>The gateway class holds onto the data set with in its data property. The data can be loaded up by supplying suitable queries.
+	</P>
+	
+<pre>class Gateway... 
+		public DataSet Data = new DataSet();
+</pre>	
+	
+	
+<P>Each concrete mapper needs to define what is the name of the table that holds its data.
+	</P>
+	
+<pre>class CricketerMapper... 
+		public override String TableName {
+			get {return "Cricketers";}
+		}
+</pre>	
+	
+<P>The player mapper has fields for each concrete mapper.
+	</P>
+		
+<pre>class PlayerMapper... 
+		private BowlerMapper bmapper;
+		private CricketerMapper cmapper;
+		private FootballerMapper fmapper;
+		public PlayerMapper (Gateway gateway) : base (gateway) {
+			bmapper = new BowlerMapper(Gateway);
+			cmapper = new CricketerMapper(Gateway);
+			fmapper = new FootballerMapper(Gateway);
+		}
+</pre>	
+	
+	
+<a name="NB2"></a>
+	
+<H3>Loading an object from the database</H3>
+		
+<P>Each concrete mapper class has a find method that returns an object given a key value.
+		</P>
+		
+<pre>class CricketerMapper... 
+		public Cricketer Find(long id) {
+			return (Cricketer) AbstractFind(id);
+		}
+</pre>	
+		
+<P>The abstract behavior on the superclass finds the right database row for the id, creates a new domain object of the correct type, and uses the load method to load it up (I'll describe the load in a moment.)
+		</P>
+		
+<pre>class Mapper... 
+		public DomainObject AbstractFind(long id) {
+			DataRow row = FindRow(id);
+			if (row == null) return null;
+			else {							
+				DomainObject result = CreateDomainObject();
+				Load(result, row);
+				return result;
+			}
+		}
+		private DataRow FindRow(long id) {
+			String filter = String.Format("id = {0}", id);
+			DataRow[] results = table.Select(filter); 
+			if (results.Length == 0) return null;
+			else return results[0];
+		}
+		protected abstract DomainObject CreateDomainObject();
+</pre>	
+		
+<pre>class CricketerMapper... 
+		protected override DomainObject CreateDomainObject(){
+			return new Cricketer();
+		}
+</pre>	
+
+		
+<P>The actual loading of data from the database is done by the load method, or rather by several load methods - one for the mapper class and all its superclasses.
+		</P>
+		
+<pre>class CricketerMapper... 
+		protected override void Load(DomainObject obj, DataRow row) {
+			base.Load(obj,row);
+			Cricketer cricketer = (Cricketer) obj;
+			cricketer.battingAverage = (double)row["battingAverage"];
+		}
+</pre>	
+		
+<pre>class AbstractPlayerMapper... 
+		protected override void Load(DomainObject obj, DataRow row) {
+			base.Load(obj, row);
+			Player player = (Player) obj;
+			player.name = (String)row["name"];
+</pre>	
+		
+<pre>class Mapper... 
+		protected virtual void Load(DomainObject obj, DataRow row) {
+			obj.Id = (int) row ["id"];
+		}
+</pre>	
+		
+<P>This logic is the logic for finding an object using a mapper for a concrete class. You can also use a mapper for the superclass: the player mapper. It needs to find an object from whichever table it is living in. Since all the data is already in memory in the data set, I can do it like this.
+		</P>
+		
+<pre>class PlayerMapper... 
+		public Player Find (long key) {
+			Player result;
+			result = fmapper.Find(key);
+			if (result != null) return result;
+			result = bmapper.Find(key);
+			if (result != null) return result;
+			result = cmapper.Find(key);
+			if (result != null) return result;
+			return null;
+		}
+</pre>	
+		
+<P>Remember this is reasonable only because the data is already in memory. If you need to go to the database three times (or more for more subclasses) this will be slow. One way that may help is to do a join across all the concrete tables. This allows you to access the data in one database call. However large joins are often slow in their own right, you'll need to do some benchmarks with your own application to find out what works and what doesn't. Also this will be an outer join, and as well as slow the syntax for this is non-portable and often cryptic.
+		</P>
+	
+	
+<a name="NEA"></a>
+	
+<H3>Updating an object</H3>
+			
+<P>The update method can be defined on the mapper superclass.
+			</P>
+			
+<pre>class Mapper... 
+		public virtual void Update (DomainObject arg) {
+			Save (arg, FindRow(arg.Id));
+		}
+</pre>	
+			
+<P>Similar to loading, we use a sequence of save methods for each mapper class.
+			</P>
+		
+<pre>class CricketerMapper... 
+		protected override void Save(DomainObject obj, DataRow row) {
+			base.Save(obj, row);
+			Cricketer cricketer = (Cricketer) obj;
+			row["battingAverage"] = cricketer.battingAverage;
+		}
+</pre>	
+		
+<pre>class AbstractPlayerMapper... 
+		protected override void Save(DomainObject obj, DataRow row) {
+			Player player = (Player) obj;
+			row["name"] = player.name;
+		}
+</pre>	
+		
+<P>The player mapper needs to find the correct concrete mapper to use and then delegate the update call.
+		</P>
+		
+<pre>class PlayerMapper... 
+		public override void Update (DomainObject obj) {
+			MapperFor(obj).Update(obj);
+		}
+		private Mapper MapperFor(DomainObject obj) {
+			if (obj is Footballer)
+				return fmapper;
+			if (obj is Bowler)
+				return bmapper;
+			if (obj is Cricketer)
+				return cmapper;
+			throw new Exception("No mapper available");
+		}
+</pre>							
+	
+	
+<a name="N10D"></a>
+	
+<H3>Inserting an object</H3>
+				
+<P>Insertion is a variation on updating, the extra behavior is creating the new row - this can be done on the superclass.
+				</P>
+				
+<pre>class Mapper... 
+		public virtual long Insert (DomainObject arg) {
+			DataRow row = table.NewRow();
+			arg.Id = GetNextID();
+			row["id"] = arg.Id;
+			Save (arg, row);
+			table.Rows.Add(row);
+			return arg.Id;
+		}
+</pre>	
+				
+<P>Again the player class delegates to the appropriate mapper
+				</P>
+				
+<pre>class PlayerMapper... 
+		public override long Insert (DomainObject obj) {
+			return MapperFor(obj).Insert(obj);
+		}
+</pre>					
+		
+	
+<a name="N123"></a>
+	
+<H3>Deleting an object</H3>
+		
+<P>Deletion is very straightforward. Again we have a method defined on the superclass
+		</P>
+		
+<pre>class Mapper... 
+		public virtual void Delete(DomainObject obj) {
+			DataRow row = FindRow(obj.Id);
+			row.Delete();
+		}
+</pre>	
+		
+<P>And a delegating method on the player mapper.
+		</P>
+		
+<pre>class PlayerMapper... 
+		public override void Delete (DomainObject obj) {
+			MapperFor(obj).Delete(obj);
+		}
+</pre>					
+		
+	
+									
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

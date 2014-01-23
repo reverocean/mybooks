@@ -1,0 +1,332 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Layering</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/" ><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/" >Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html" >Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html" >Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html" >Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo" >Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/" >ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Layering</H1>
+<HR>
+	
+<P>Layering is one of the most common techniques that software designers use to break apart a complicated software system. You see it in machine architectures where layers descend from a programming language with operating system calls, into device drivers and CPU instruction sets, into logic gates inside chips. Networking has FTP layered on top of TCP, on top of IP, on top of ethernet. 
+	</P>
+	
+<P>When thinking of a system in terms of layers, you imagine the principal subsystems in the software arranged in some form of layer cake, where each layer rests upon a lower layer. In this scheme the higher layer uses various services defined by the lower layer, but the lower layer is unaware of the higher layer. Furthermore each layer usually hides its lower layers from the layers above, so layer 4 uses the services of layer 3 which uses the services of layer 2, but layer 4 is unaware of layer 2. (Not all layering architectures are opaque like this, but most are - or rather most are mostly opaque.
+	</P>	
+	
+<P>Breaking down a system into layers has a number of important benefits
+	</P>
+	
+<UL>
+<LI style="list-style-image: url(good-bullet.gif)">You can understand a single layer as a coherent whole without knowing much about the other layers. You can understand how to build an FTP service on top of TCP without knowing the details of how ethernet works</LI>
+<LI style="list-style-image: url(good-bullet.gif)">You can substitute layers with alternative implementations of the same basic services. An FTP service can run over ethernet, PPP, or whatever a cable company uses without change.</LI>
+<LI style="list-style-image: url(good-bullet.gif)">You minimize dependencies between the layers. If the cable company changes its physical transmission system, providing they make IP work we don't have to alter our FTP service.</LI>
+<LI style="list-style-image: url(good-bullet.gif)">Layers make good places for standardization. TCP and IP are standards because they define how their layers should operate.</LI>
+<LI style="list-style-image: url(good-bullet.gif)">Once you have a layer built you can use it for many higher level services. So TCP/IP is used by FTP, telnet, SSH, http. Otherwise all of these higher level protocols would have to write their own lower level protocols</LI>
+</UL>
+	
+	
+	
+		
+	
+<P>Layering is an important technique, but there are downsides.
+	</P>
+	
+<UL>
+<LI style="list-style-image: url(bad-bullet.gif)">Layers encapsulate some things well, but not all. As a result you sometimes get cascading changes. The classic example of this in a layered enterprise application is adding a field that needs to display on the UI, be in the database, and thus be added to every layer in between.</LI>
+<LI style="list-style-image: url(bad-bullet.gif)">Extra layers can harm performance. At every layer things typically need to be transformed from one representation to another. However the encapsulation of underlying function often gives you efficiency gains that more than compensate. A layer that controls transactions can be optimized and will then make everything faster.</LI>
+</UL>
+	
+	
+<P>But the hardest part of a layered architecture is deciding what layers to have and what the responsibility of each layer should be.
+	</P>
+
+<a name="N32"></a>
+
+<H2>Evolution of layers in enterprise applications</H2>
+	
+<P>Although I'm too young to have done any work in the early days of batch systems, I don't sense that people thought much of layers in those days. You wrote a program that manipulated some form of files (ISAM, VSAM, etc) and that was your application. No layers present. 
+	</P>
+	
+<P>The notion of layers became more apparent in the 90's with the rise of <B>client-server</B> systems. These were two layer systems: the client held the user-interface and other application code and the server was usually a relational database. Common client tools  were VB, Powerbuilder and Delphi. These made it particularly easy to build data-intensive applications as they had UI widgets that were aware of SQL. This allowed you build a screen by dragging controls onto a design area and then using property sheets to connect the controls to the database.
+	</P>
+	
+<P>If the application was all about the display and simple update of relational data, then these client-server systems worked very well. The problem came with domain logic: business rules, validations, calculations and the like. Usually people would write these on the client. But this was awkward and was usually done by embedding the logic directly into the UI screens. As the domain logic got more complex, this code became very difficult to work with. Furthermore embedding logic in screens made it easy to duplicate code, which meant that simple changes resulted in hunting down similar code in many screens.
+	</P>
+	
+<P>An alternative was to put the domain logic in the database as stored procedures. However stored procedures give limited structuring mechanisms, which again led to awkward code. Also many people liked relational databases because SQL was a standard which would allow them to change their database vendor. Despite the fact that relatively few people actually do this, many more like the freedom to do it without too high a porting cost. Stored procedures are all proprietary, so would remove that option.
+	</P>
+	
+<P>At the same time that client-server was gaining popularity, the object-oriented world was rising. The object community had an answer to the problem of domain logic, move to a three layer system. In this approach you have a presentation layer for your UI, a domain layer for your domain logic, and a data source. This way you can move all of that intricate domain logic out of the UI and put into a layer where you can objects to properly work with it.
+	</P>
+	
+<P>Despite this the object bandwagon made little headway. The truth was that many systems were simple, or at least started that way. And although the three layer approach had many benefits the tooling for client-server was compelling if your problem was simple. The client-server tools also were difficult, or even impossible, to use in a three layer configuration.
+	</P>
+	
+<P>I think the seismic shock here was the rise of the web. Suddenly people wanted to deploy client-server applications with a web browser. However if all your business logic was buried in a rich client then all your business logic needed to be redone to have a web interface. A well designed three layer system could just add a new presentation and be done with it. Furthermore, with Java, we saw an object-oriented language hit the mainstream. The tools that appeared to build web pages were much less tied to SQL, and thus more amenable to a third layer.
+	</P>	
+	
+<P>When people discuss layering, there's often some confusion over the terms layer and tier. Often the two are used as synonyms. However most people see tier as implying a physical separation. Client-server systems are often described as two-tier systems, and the separation is physical: the client is a desktop and the server is server. I use layer to stress that you don't have to run the layers on different machines. A domain layer would often run on either a desktop or the database server. In this situation you have two nodes but with three distinct layers. With a local database I could run all three layers on a laptop, but it would still be three distinct layers.
+	</P>
+	
+
+
+<a name="N53"></a>
+
+<H2>The Three Principal Layers</H2>
+	
+<P>So for this book I'm centering my discussion around a layered architecture of three primary layers: presentation, domain, and data source (I'm following the names of <a href="http://www.amazon.com/exec/obidos/ASIN/0201616173">[Brown et al]</a>).
+	</P>
+	
+<P>
+<B>Presentation</B> logic is about how to handle the interaction between the user and the software. This can be as simple as a command line or a text based menu system. These days it's more likely to be a rich client graphics UI or an HTML based browser UI. (In this book I use <B>rich client</B> to mean a windows / swing / fat client style UI, as opposed to an HTML browser.) The primary responsibilities of the presentation is to display information to the user and to interpret commands from the user into actions upon the domain and data source. 
+	</P>
+	
+<P>
+<B>Data source</B> logic is about communicating with other systems that carry out tasks on behalf of the application. These can be transaction monitors, other applications, messaging systems and so forth. For most enterprise applications the biggest piece of data source logic is a database which is primarily responsible for storing persistent data. 
+	</P>
+	
+<P>The remaining piece is the <B>domain logic</B>, also referred to as business logic. This is the work that this application needs to do for the domain you're working with. It involves calculations based on inputs and stored data, validation of any data that comes in from the presentation, and figuring out exactly what data source logic to dispatch depending on commands received from the presentation.
+	</P>
+	
+<P>A single application can often have multiple packages of each of these three subject areas. An application designed to be manipulated by end users through a rich client interface, but also for  manipulation though a command line would have two presentations: one for the rich client interface and one for the command line. Multiple data source components may be present for different databases, but particularly for communication with existing packages. Even the domain may be broken into distinct areas which are relatively separate from each other. Certain data source packages may only be used by certain domain packages.
+	</P>
+	
+<P>So far I've talked about a user, this naturally raises the question of what happens when there isn't a human being driving the software. This could be something new and fashionable like a web service, or something mundane and useful like a batch process. In this case the user is the client program. At this point it becomes apparent that there is a lot of similarity between the presentation and data source layers in that they both are about connection to the outside world. This is the logic behind Alistair Cockburns Hexagonal Architecture pattern which visualizes any system as a core surrounded by interfaces to external systems. In the hexagonal architecture everything external is fundamentally an outside interface and thus it's a symmetrical view rather than my asymmetric layering scheme.
+	</P>
+	
+<P>I find the asymmetry useful, however, because I think there is a useful distinction to be made between an interface that you provide as a service to others, and a your use of someone else's service. Driving down to the core, this is the real distinction I make between presentation and data source. Presentation is an external interface for a service your system offers to someone else, whether it be a complex human or a simple remote program. Data source is the interface to things that are providing a service to you. I find it useful to think about these differently because the difference in client is alters the way you think about the service.
+	</P>
+	
+	
+<table cellpadding="3" border="1">
+	
+<tr>
+<th>Layer</th><th>Responsibilities</th>
+</tr>
+	
+<tr>
+<td>Presentation</td><td>Provision of services, display of information (eg in windows or HTML, handle user request (mouse clicks, keyboard hits, http requests, command line invocations)</td>
+</tr>
+	
+<tr>
+<td>Domain</td><td>The logic that is the real point of the system</td>
+</tr>
+	
+<tr>
+<td>Data source</td><td>Communication with databases, messaging systems, transaction managers, other packages</td>
+</tr>	
+	
+</table>
+	
+<P>One of the hardest parts of working with domain logic seems to be that people often find it difficult to recognize what is domain logic and what is other forms of logic. A good example of this was when I was told about a system where there was a list of products where all the products that sold over 10% more than they did last month was colored in red. To do this they placed logic in the presentation layer that compared this months sales to last month's sales and if the difference was more than 10% they set the color to red.
+	</P>
+	
+<P>The trouble is that's putting domain logic into the presentation. To properly separate the layers you need have a method in the domain layer to indicate if a product has improving sales. This method does the comparison between the two months and returns a boolean value. The presentation layer then simply calls this boolean method, and if true, highlights the product in red. That way the process is broken into its two parts: deciding whether there is something highlightable and choosing how to highlight.
+	</P>
+	
+<P>I'm uneasy with being overly dogmatic about this. When reviewing this book, Alan Knight commented that he was "torn between whether just putting that into the UI is the first step on a slippery slope to hell or a perfectly reasonable thing to do that only a dogmatic purist would object to". The reason we are uneasy is because it's both!
+	</P>
+	
+
+
+<a name="N9F"></a>
+
+<H2>When to separate the layers</H2>
+	
+<P>Although we can identify the three common responsibility layers of presentation, domain and data source for each of the three examples, each example has its own questions as to how they are separated. If each responsibility layer is quite complex then it makes sense to break these into their own separate modules. An application with complex logic would have distinct package structures for the presentation, domain, and data source. Indeed it would probably have further mediating layers.  But simpler systems might not. If all you are doing is viewing and simple data entry then it may well be reasonable to put all the logic in a series of server pages, particularly if you have a tool that makes it easy to write these server pages.
+	</P>
+	
+<P>The cut over point for separating these responsibilities isn't one that can be easily defined. I can't say that if your domain logic has complexity greater than 7.4 then you should separate it out from the presentation. (Or I guess I can if I leave the calculation of the complexity as an exercise for the reader.) My practice is to almost always separate the presentation from the domain/data source. The only case I'd break that rule is if the complexity of the domain/data source is close to nothing and I have tools that make it easy to tie things together. A classic example of this is the many client-server systems done in such environments as Visual Basic or Powerbuilder. They make it very easy to build rich client interfaces on top of SQL databases. Providing the presentation matches very closely to the database structure, and there's hardly any validation or calculation involved, then I'd go ahead and use it. But as soon as validation or calculation starts getting complicated I would look to separating it out into separate objects.
+	</P>
+	
+<P>I'm inclined to be more tolerant of separating the domain from the data source. For many simpler applications the two can look quite similar, so then I'm more inclined to keep them together. But as soon as the way I organize my business logic starts looking different from the way the data source is defined I'll want to put them into separate modules.
+	</P>
+	
+<P>When describing the layering structure of an application I like to use a UML package diagram to show the packages and their dependencies. I haven't used one here because the actual dependencies depend a great deal on the actual patterns that you are using. One pretty absolute rule is that nothing should depend on the presentation. No module in the domain or data source layers should ever invoke anything on the presentation. This sometimes causes problems when the presentation needs to update on a change in the domain, when this occurs you'll need to use an <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612" >Observer</a> to avoid a dependency into the presentation. 
+	</P>
+	
+<P>Other than that we need to go into the patterns in more detail before we can sketch out any dependencies.
+	</P>
+	
+
+
+<a name="NB8"></a>
+
+<H2>Choosing where to run your layers</H2>
+	
+<P>For most of this book I'm talking about logical layers: dividing a system into separate pieces to reduce the coupling between different parts of a system. Separation between layers is useful even if they are all running on one physical machine. But there are places where the physical structure of a system makes a difference. 
+	</P>
+	
+<P>For most IS applications the decision is whether to run processing on a client, desktop machine, or whether to run processing on a server. 
+	</P>
+	
+<P>Often the simplest case is to run everything on servers. Using a HTML front end which uses a web browser is a good way to do this. The great advantage of running everything on the server is that everything is easy to upgrade and fix because it's in a limited amount of places. You don't have to worry about deployment to many desktops and keeping them all in sync with the server. You don't have to worry about compatibilities with other desktop software.  
+	</P>
+	
+<P>The general argument in favor of running on a client turns on responsiveness or disconnected operation. Any logic that runs on the server needs a server round trip to respond to anything the user does. If the user wants to quickly fiddle with things and see immediate feedback that round trip gets in the way. It also needs a network connection to run. The network may like to be everywhere, but as I type this it isn't at 31,000 ft. It may be everywhere soon, but there's people who want to do work now and not wait for wireless coverage to reach Dead End Creek. Disconnected operation brings particular challenges, and I'm afraid I decided to put those out of the scope of this book.
+	</P>
+	
+<P>With those general forces in place we can then look at the options layer by layer. 
+	</P>
+	
+<P> The data source pretty much always will only run on servers. The exception is where you might duplicate server functionality onto a suitably powerful client. Usually this case appears when you want disconnected operation. In this case changes to the data source on the disconnected client need to be synchronized with the server. As I mentioned earlier, I decided to leave those issues to another day - or another author.
+	</P>
+	
+<P>The decision of where to run the presentation depends mostly on what kind of user interface you want. Running a rich client pretty much means running the presentation on the client. Running a web interface pretty much means running on the sever. There are exceptions, remote operation of client software (such as X servers in the Unix world) running a web server on the desktop, but these exceptions are rare.
+	</P>
+	
+<P>If you're building a B2C system- you have no choice. Any Tom, Dick or Harriet could be connecting to your servers and you don't want to turn anyone away because they insist on doing their online shopping with a TRS-80. In this case you do all processing on the server and offer up HTML for the browser to deal with. Your limitation with the HTML option is that every bit of decision making needs a round trip from the client to the server and that can hurt responsiveness. You reduce some of that with browser scripting and downloadable applets, but they reduce your browser compatibility and  tend to add other headaches. The more pure HTML you can go the easier life is.
+	</P>
+	
+<P>That ease of life is appealing even if every one of your desktops is lovingly hand-built by your IS department. Keeping clients up to date and avoiding compatibility errors with other software dogs even simple rich client systems. 
+	</P>
+	
+<P>The primary reason that people want a rich client presentation is because some tasks are complicated for users to do, and to have a usable application they'll need more than what a web GUI can give. Increasingly, however, people are getting used to ways to make web front ends more usable and that reduces the need for a rich client presentation. As I write this I'm very much in favor of the web presentation if you can, and the rich client if you must.
+	</P>
+	
+<P>This leaves us with the domain logic. You can run business logic either all on the server, all on the client, or split it. Again all on the server is the easiest way for ease of maintenance. The demand to move it to the client is either for responsiveness or for disconnected use. 
+	</P>
+	
+<P>If you have to run some logic on the client you can consider running all of it there - at least that way it's all in one place. Usually this goes hand in hand with a rich client - running a web server on a client machine isn't going to help responsiveness much, although it can be a way to deal with disconnected operation. In this case you can still keep your domain logic in separate modules from the presentation, and indeed you can with either <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s or a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. The problem with putting all the domain logic on the client is that this way you have more to upgrade and maintain. 
+	</P>
+	
+<P>Splitting across the both desktop and server sounds like the worst of both worlds, since that way you don't know really where any piece of logic may be. The main reason to do it is when you only have a small amount of domain logic that needs to run on the client. The trick then is to isolate this piece of logic into a self contained module that isn't dependent on any other part of the system. That way you can run that module on either client or server. Doing this will require a good bit of annoying jiggery-pokery - but it's a good way of doing the job.
+	</P>	
+	
+<P>Once you've chosen your processing nodes, you should then try to keep all the code on one node on a single process. Don't try to separate the layers into separate processes unless you absolutely have to, since doing that will both cause performance degradation and add complexity as you have to add things like <A href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html"><I>Remote Facade</I></A>s and <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A>s.
+	</P>
+	
+
+
+
+<a name="NF4"></a>
+
+<H2>More Layering schemes</H2>
+	
+<P>I've picked these three layers because these three subject matters are always present, and I think that the three represent the simplest layering scheme that makes sense for enterprise applications. You can cut the layers differently, and often these other cuts are useful, but I've found these three are always useful to have in your mind while the others are often useful but not always useful. 
+	</P>
+	
+<P>I'll illustrate this by looking at some layering schemes that have been promoted in some useful books on IS architecture. First up is what I'll call the Brown model which is discussed in <a href="http://www.amazon.com/exec/obidos/ASIN/0201616173">[Brown et al]</a>. The Brown model has five layers: Presentation, Controller/Mediator, Domain, Data Mapping, and Data Source. Essentially this model places additional mediating layers between the basic three layers. The controller/mediator mediates between the presentation and domain layers, while the data mapping layer mediates between the domain and data source layers.
+	</P>
+	
+<P>I find that having the mediating layers is something that's useful some of the time, but not all of the time. As a result I've described mediators in terms of patterns. The <A href="applicationController.html" tppabs="http://martinfowler.com/isa/applicationController.html"><I>Application Controller</I></A> is the mediator between the presentation and domain, and the <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A> is the mediator between the data source and the domain. For organizing this book I've described <A href="applicationController.html" tppabs="http://martinfowler.com/isa/applicationController.html"><I>Application Controller</I></A> in the presentation section and <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A> in the data source section.
+	</P>
+	
+<table cellpadding="3" border="1">
+	
+<tr>
+<th>Brown</th><th>Fowler</th>
+</tr>
+	
+<tr>
+<td>Presentation</td><td>Presentation</td>
+</tr>
+	
+<tr>
+<td>Controller/Mediator</td><td><A href="applicationController.html" tppabs="http://martinfowler.com/isa/applicationController.html"><I>Application Controller</I></A></td>
+</tr>
+	
+<tr>
+<td>Domain</td><td>Domain</td>
+</tr>
+	
+<tr>
+<td>Data Mapping</td><td><A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A></td>
+</tr>
+	
+<tr>
+<td>Data Source</td><td>Data source</td>
+</tr>	
+	
+</table>
+	
+<P>So for me the addition of mediating layers, frequently but not always useful, represents an optional extra in the design. My approach is to always think of the three base layers, look to see if any of them are getting too complex, and if so add the mediating layer to separate the functionality.
+	</P>	
+	
+<P>Another good layering scheme for J2EE appears in <a href="http://www.amazon.com/exec/obidos/ASIN/0130648841">CoreJ2EE patterns</a>. Here the layers are client, presentation, business, integration, and resource. Simple correspondences exist for the business and integration layers. They refer to resource layer as those external services that the integration layer is connecting to. The main difference is that they split the presentation layer between the part that runs on the client (client) and the part that runs on a server (presentation). This is often a useful split to do, but again it's not one that's needed all the time.
+	</P>
+	
+<table cellpadding="3" border="1">
+	
+<tr>
+<th>Core J2EE</th><th>Fowler</th>
+</tr>
+	
+<tr>
+<td>Client</td><td>Presentation that runs on client (eg rich client systems)</td>
+</tr>
+	
+<tr>
+<td>Presentation</td><td>Presentation part that runs on server (eg http handers, server pages</td>
+</tr>
+	
+<tr>
+<td>Business </td><td>Domain</td>
+</tr>
+	
+<tr>
+<td>Integration</td><td>Data source</td>
+</tr>
+	
+<tr>
+<td>Resource</td><td>The external resource that the data source in communication with</td>
+</tr>	
+	
+</table>
+	
+<P>	The <a href="http://www.amazon.com/exec/obidos/ASIN/0735605238">Microsoft DNA </a>architecture defines three layers: presentation, business, and data access. They correspond pretty directly to the three layers I use here. The biggest shift occurs in the way that data is passed up from the data access layers. In Microsoft DNA all the layers operate on record sets that are the results of SQL queries issued by the Data Access layer. This introduces an apparent coupling in that both the business and presentation layers know about the database. 
+	</P>
+	
+<P>The way I look at this is that in DNA the record set acts as <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A> between layers. The business layer can modify the record set on its way up to the presentation, or even create one itself (although that is rarer). Although this form of communication is in many ways unwieldy it has the big advantage of allowing the presentation to use data-aware GUI controls, even on data that's been modified by the business layer.
+	</P>
+	
+<table cellpadding="3" border="1">
+	
+<tr>
+<th>Microsoft DNA</th><th>Fowler</th>
+</tr>
+	
+<tr>
+<td>Presentation</td><td>Presentation</td>
+</tr>
+	
+<tr>
+<td>Business </td><td>Domain</td>
+</tr>
+	
+<tr>
+<td>Data Access</td><td>Data source</td>
+</tr>
+	
+</table>
+	
+<P>In this case the domain layer is structured in the form of <A href="http://martinfowler.com/isa/TableModule.html"><I>Table Module</I></A>s and the data source layer uses <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html"><I>Table Data Gateway</I></A>s.
+	</P>
+	
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/" ><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/" ><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/" >Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

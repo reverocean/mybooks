@@ -1,0 +1,83 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Inheritance Mappers</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Inheritance Mappers</H1>
+<HR>
+
+<P align="center">
+<I>A set of mappers to handle inheritance hierarchies</I>
+</P>
+ 
+<P align="center">
+<img src="inheritanceMappersSketch.gif" tppabs="http://martinfowler.com/isa/inheritanceMappersSketch.gif"></P>
+
+	
+<P>When you are mapping from an object-oriented inheritance hierarchy in memory to a relational database you need to minimize the amount of code needed to save and load the data to database. You also want to provide both abstract and concrete mapping behavior that allows you to save or load a superclass or a subclass.
+	</P>	
+	
+<P>Although the details of this behavior varies with your inheritance mapping scheme (<A href="singleTableInheritance.html" tppabs="http://martinfowler.com/isa/singleTableInheritance.html"><I>Single Table Inheritance</I></A>, <A href="classTableInheritance.html" tppabs="http://martinfowler.com/isa/classTableInheritance.html"><I>Class Table Inheritance</I></A>, <A href="leafTableInheritance.html" tppabs="http://martinfowler.com/isa/leafTableInheritance.html"><I>Concrete Table Inheritance</I></A>) the general structure works the same for all of them.
+	</P>
+
+
+<H2>How it Works</H2>
+	
+<P>You can organize the mappers using a hierarchy so that each domain class has a mapper that saves and loads the data for that domain class. That way when the mapping changes, you have one point where you can change the mapping. This approach works well for concrete mappers that know how to map the concrete objects in the hierarchy. There are times, however, where you also need mappers for the abstract classes in the hierarchy. These can be implemented with mappers that are actually outside of the basic hierarchy but delegate to the appropriate concrete mappers.
+	</P>
+	
+<P>To best understand how this works, I'll start with the concrete mappers. In the sketch the concrete mappers are the mappers for footballer, cricketer, and bowler. The basic behavior of the mappers include the find, insert, update, and delete operations. 
+	</P>
+	
+<P>The finder methods are declared on the concrete subclasses because they will return a concrete class, so the find method on BowlerMapper should return a Bowler not an abstract class. Common OO languages cannot let you change the declared subtype of a method, so it's not possible to inherit the find operation and still declare a specific return type. You can, of course, return an abstract type but that forces the user of the class to downcast - which is best to avoid. (A language with run time typing avoids this problem.)
+	</P>
+	
+<P>The basic behavior of the find method is to find the appropriate row in the database,  instantiate an object of the correct type (a decision that's made by the subclass) and then load the object with data from the database. The load method is implemented by each mapper in the hierarchy and the mapper loads the behavior for its corresponding domain object. So the bowler mapper's load method loads the data specific to the bowler class, calls the superclass method to load the data specific to the cricketer, which calls its superclass method, etc. 
+	</P>
+	
+<P>The insert and update methods operate in a similar way using a save method. Here you can define the interface on the superclass, indeed on a <A href="layerSupertype.html" tppabs="http://martinfowler.com/isa/layerSupertype.html"><I>Layer Supertype</I></A>. The insert method creates a new row and then saves the data from the domain object using the save hook methods. The update method just saves the data using the save hook methods. The save hook methods operate similarly to the load hook methods, with each class storing its specific data and calling the superclass save method.
+	</P>
+	
+<P>This scheme makes it quite easy to write the appropriate mappers to save the specific information needed for a particular part of the hierarchy. The next step is to support loading and saving an abstract class, in this example a player. While a first thought is to put appropriate methods on the superclass mapper, that actually gets awkward because while concrete mapper classes can just use the abstract mapper's insert and update methods, the player mapper's insert and update needs to override these to call a concrete mapper instead. The result is one of those combinations of generalization and composition that twists your brain cells into an appalling knot.
+	</P>
+	
+<P>So I prefer to separate them into two classes. The abstract player mapper is the one whose responsibility is to load and save the specific player data to the database. This is a class that is abstract and whose behavior is just used by the concrete mapper objects. A separate player mapper class is used for its interface. It provides a find method and overrides the insert and update methods. For all of these its responsibility is to figure out which concrete mapper should handle the task and delegate to it.
+	</P>
+	
+<P>Although this broad scheme makes sense for each type of inheritance mapping, the details do vary with the exact mapping scheme, so it's not possible to show a code example for this case. You can find good examples in each of the inheritance mapping patterns: <A href="singleTableInheritance.html" tppabs="http://martinfowler.com/isa/singleTableInheritance.html"><I>Single Table Inheritance</I></A>, <A href="classTableInheritance.html" tppabs="http://martinfowler.com/isa/classTableInheritance.html"><I>Class Table Inheritance</I></A>, and <A href="leafTableInheritance.html" tppabs="http://martinfowler.com/isa/leafTableInheritance.html"><I>Concrete Table Inheritance</I></A>.
+	</P>	
+
+
+<H2>When to Use it</H2>
+	
+<P>This general scheme makes sense for any inheritance based database mapping. The alternatives involve such things as duplicating superclass mapping code amongst the concrete mappers or folding the player's interface into the abstract player mapper class. The former is a heinous crime and latter is possible but leads to a messy and confusing player mapper class. So on the whole its hard to think of a good alternative to this pattern.
+	</P>
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

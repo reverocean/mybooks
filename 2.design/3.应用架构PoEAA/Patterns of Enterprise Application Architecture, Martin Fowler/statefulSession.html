@@ -1,0 +1,110 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Server Session State</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Server Session State</H1>
+<HR>
+
+<P align="center">
+<I>Keep the session state in an active process in memory that can be serialized into a memento if the memory resources are needed or the session migrates.</I>
+</P>
+
+<H2>How it Works</H2>
+	
+<P>The simplest form of this pattern occurs when a session object is held in memory on an application server. In this case you can simply have some kind of map in memory which holds these session objects keyed by a session id - and then all the client needs to do is to give the session id and the session object can be retrieved from the map to process the request.
+	</P>
+	
+<P>This simple scenario assumes, of course, that the application server carries enough memory to be able to perform this task. It also assumes that there is only one application server, i.e. no clustering, and that if the application server fails then it is appropriate for the session to be abandoned and all work so far in the session lost the great bit-bucket in the sky.
+	</P>
+	
+<P>For many application this set of assumptions is actually not a problem. However for others it may be problematic. But there are ways of dealing with cases when the assumptions are no longer valid, and these introduce common variations that add complexity to this essentially simple pattern.
+	</P>
+	
+<P>The first issue is that of dealing with memory resources held by the session objects - which indeed is the common objection to <I>Server Session State</I>. The answer, of course, is to not keep them in memory but instead serialize all the session state to a <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612">memento</a>. This presents two questions: in what form do you persist the <I>Server Session State</I> and where do you persist the <I>Server Session State</I>.
+	</P>
+	
+<P>The form to use is usually as simple a form as possible, since the accent of <I>Server Session State</I> is it's simplicity in programming. Several platforms provide a simple binary serialization mechanism that allows you serialize a graph of objects quite easily. Another route is to serialize into another form. A common one to consider these days is a textual form, fashionably as an XML file.
+	</P>
+	
+<P>The binary one is usually easier, since it requires little programming, while the textual form will usually require at least a little code. Binary serliazations also require less disk space - and although total disk space will rarely be a concern, large serialized graphs will take longer to activate into memory.
+	</P>
+	
+<P>There are two common issues with binary serialization. Firstly the serialized form is not human readable - which is a problem iff humans want to read it. Secondly there may be problems with versioning. If you modify a class, by say adding a field, after you've serialized it; you may not be able to read it back. Of course not many sessions are likely to span an upgrade of the server software - unless of course it's a 7/24 server where you may have a cluster of machines running: some upgraded and some not.
+	</P>
+	
+<P>This brings us to question of where to store the <I>Server Session State</I>. An obvious possibility is on the application server itself, either in the file system or in a local database. This is the simple route - but may not support efficient clustering or support fail over. In order to support these the passivated <I>Server Session State</I> needs to be somewhere generally accessible, such as shared server. This will now support clustering and fail over, at the cost of a longer time to activate the server - although caching may well eliminate much of this cost.
+	</P>
+	
+<P>This line of reasoning may lead to the ironic route of storing the serialized <I>Server Session State</I> in the database using a session table indexed by the session id. This table would require a <A href="serializedLob.html" tppabs="http://martinfowler.com/isa/serializedLob.html"><I>Serialized LOB</I></A> to hold the serialized <I>Server Session State</I>. Database performance varies when it comes to handling large objects, so the performance aspects of this one is very database dependent.
+	</P>
+	
+<P>At this point we are right at the boundary between <I>Server Session State</I> and <A href="databaseSessionState.html" tppabs="http://martinfowler.com/isa/databaseSessionState.html"><I>Database Session State</I></A>.The boundary between these patterns is completely arbitrary - but I've drawn the line at the point where you convert the data in the <I>Server Session State</I> into tabular form.
+	</P>
+	
+<P>If you're storing the <I>Server Session State</I> in a database, then you'll have to worry about handling sessions that have gone away, especially in a consumer application. One route is to have a daemon that looks for aged sessions and deletes them, but this can lead to a lot of contention on the session table. Kai Yu told about an approach he used with success. In this case they partitioned the session table into twelve database segments. Every two hours they would rotate the segments, deleting everything in the oldest segment and directing all inserts to the newly empty segment. While this did mean that any session that was active for twenty-four hours got unceremoniously dumped, that's sufficiently rare to not be a problem.
+	</P>
+	
+<P>Although all of these variations get more and more effort to do, the good news is that increasingly application servers are supporting these capabilities automatically. So it may well be that these are things that the application server vendors can worry their ugly little heads about.
+	</P>
+	
+	
+<H3 style="margin-left: 2em; margin-right: 2em">Java</H3>
+		
+<P style="margin-left: 2em; margin-right: 2em">The two most common techniques for <I>Server Session State</I> are using the http session and using a stateful session bean. The http session is a simple route and leads to the session data being stored by the web server. In most cases this leads to server affinity and can't cope with fail over. Some vendors are implementing a shared http session capability which allows you to store http session data in a database that's available to all application servers. (You can also do this manually, of course.)
+		</P>
+		
+<P style="margin-left: 2em; margin-right: 2em">The other common route is to use a stateful session bean, which requires an EJB server. The EJB container handles all persistence and passivation, so this makes it very easy to program to. The main disadvantage is that the specification doesn't ask application servers to avoid server affinity. However some application servers do provide this kind of capability, for example IBM's WebSphere can serialize a stateful session bean into a BLOB in DB2, which allows multiple application servers to get at its state.
+		</P>
+		
+<P style="margin-left: 2em; margin-right: 2em">Another alternative is to use an entity bean. On the whole I've been pretty dismissive of entity beans, but you can use an entity bean to store a <A href="serializedLob.html" tppabs="http://martinfowler.com/isa/serializedLob.html"><I>Serialized LOB</I></A> of session data. This is pretty simple and is less likely to run into many of the issues that usually surround entity beans.
+		</P>		
+	
+	
+<H3 style="margin-left: 2em; margin-right: 2em">.NET</H3>
+		
+<P style="margin-left: 2em; margin-right: 2em">
+<I>Server Session State</I> are easy to implement with the built in session state capability. By default .NET stores session data in the server process itself. You can also adjust the storage using a state service, which can reside on the local machine or on any other machine on the network.By using a separate state service you can reset the web server and still retain the session state. You make the change between in-process state and a state service in the configuration file, so you don't have to change the application.
+		</P>		
+	
+
+
+<H2>When to Use it</H2>
+	
+<P>The great appeal of <I>Server Session State</I> is its simplicity. In a number of cases you don't have to do any programming at all to make this work. Whether you can get away with that depends on if you can get away with the in-memory implementation, and if not how much help your application server platform gives you.
+	</P>
+	
+<P>Even without that you may well find that the effort you do need is little. Serializing a BLOB to a database table may turn out to be much less effort than converting the server objects to tabular form.
+	</P>
+	
+<P>Where the programming effort does come into play is in the session maintenance. Particularly if you have to roll your own support to enable clustering and fail-over that may work out to be more trouble than your other options, particularly if you don't have much session data to deal with, or if your session data is easily converted to tabular form.
+	</P>
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

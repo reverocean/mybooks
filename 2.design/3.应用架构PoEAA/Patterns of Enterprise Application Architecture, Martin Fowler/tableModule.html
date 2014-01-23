@@ -1,0 +1,250 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Table Module</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Table Module</H1>
+<HR>
+
+<P align="center">
+<I>Provide a single object for all the behavior on a table</I>
+</P>
+
+<P align="center">
+<img src="tableModuleSketch.gif" tppabs="http://martinfowler.com/isa/tableModuleSketch.gif"></P>
+
+	
+<P>One of the key messages of object-orientation is to bundle together data with the behavior that uses that data. The traditional object-oriented approach is based on objects with identity, along the lines of <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. So if we have an employee class, any instance of that class corresponds to a particular employee. This scheme works well because once we have a reference to an employee, we can execute operations, follow relationships, and gather data on that individual. 
+	</P>
+	
+<P>One of the problems with <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> is the interface with relational databases. In many ways the <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> approach treats the relational database like some old granny that's shut up in an attic and nobody wants to talk about. As a result you often need considerable programmatic gymnastics to pull data in and out of the database, transforming between two different representations of the data. 
+	</P>
+	
+<P>A <I>Table Module</I> organizes domain logic with one class per table in the database, and a single instance of a class contains the various procedures that will act on the data. The primary distinction with <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> is that if you have many orders, a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>  will have one order object per order, while a <I>Table Module</I> will have one object to handle all the orders.
+	</P>
+	
+
+
+<H2>How it Works</H2>
+	
+<P>The strength of <I>Table Module</I> is that it allows you to package the data and behavior together, while at the same time playing to the strengths of a relational database. On the surface <I>Table Module</I> looks much the same as regular objects. The key difference is that <I>Table Module</I> has no notion of an identity for the objects that it's working with. So if you wanted to obtain the address of an employee you would have a method like <code>anEmployeeModule.getAddress(long employeeID)</code>. Every time you want to do something to a particular employee you have to pass in some kind of identity reference. Often this will be the primary key that's used in the database.	
+	</P>
+	
+<P>Usually you use <I>Table Module</I> with a backing data structure that's table-oriented.  The tabular data is usually the result of a SQL call, and held in some record set object that mimics a SQL table. The <I>Table Module</I> gives you an explicit method based interface that acts on the tabular data.
+	</P>
+	
+<P>The <I>Table Module</I> may be an instance or it may be a collection of static methods. The advantage of an instance is that it allows you to initialize the <I>Table Module</I> with an existing record set, perhaps the result of a query. We can then use the instance to manipulate the rows in the record set. Using instances also makes it possible to use inheritance, so we can write a ManagerModule that contains additional behavior. 
+	</P>
+	
+<P>The <I>Table Module</I> may include queries as factory methods. The alternative route is to have a <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html"><I>Table Data Gateway</I></A>. The disadvantage of using an extra <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html"><I>Table Data Gateway</I></A> class and mechanism in the design. The advantage of the <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html"><I>Table Data Gateway</I></A> is that it allows you to use a single <I>Table Module</I> on data from different data sources, since the you use a different <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html"><I>Table Data Gateway</I></A> for each data source.
+	</P>
+
+
+<H2>When to Use it</H2>
+	
+<P>
+<I>Table Module</I> is very much based on table-oriented data, so obviously it  makes sense when you are accessing tabular data. It also puts that data structure very much into the center of the code, so you also want the way you access the data structure to be fairly straightforward. 
+	</P>
+	
+<P>The most well-known situation where I've come across this pattern is in Microsoft COM designs. In COM the record set is the primary repository of data in an application. Record sets can be passed to the UI where data aware widgets display information. Microsoft's ADO libraries give you a good mechanism to access the relational data as record sets. In this situation <I>Table Module</I> allows you to fit business logic into the application in a well organized way, without losing the way the various elements work on the tabular data. 
+	</P>
+	
+<P>So you can access data from the database and pass it to a <I>Table Module</I>. You can then use the <I>Table Module</I> to perform calculations of derived data which adds to the underlying data set. Then the you can pass the data set to the UI for display and modification using the table aware widgets. The table aware widgets can't tell if the record sets came directly from the relational database, or if a <I>Table Module</I> manipulated the data on the way out. After modification in the GUI, the data set goes back to the <I>Table Module</I> for validation before it's saved to the database.
+	</P>
+	
+	
+<P>However <I>Table Module</I> does not give you the full power of objects in organizing complex logic. You can't have direct instance to instance relationships, and polymorphism does not work well. So for handling complicated domain logic, a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> is a better choice. Essentially you have to trade off <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>'s ability to handle complex logic versus <I>Table Module</I>'s easier integration with the underlying table oriented data structures. 
+	</P>	
+	
+<P>If the objects in a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> and the database tables are relatively similar, then it may be better to use a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> that uses <A href="activeRecord.html" tppabs="http://martinfowler.com/isa/activeRecord.html"><I>Active Record</I></A>. <I>Table Module</I> works better than using a combination of <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> and <A href="activeRecord.html" tppabs="http://martinfowler.com/isa/activeRecord.html"><I>Active Record</I></A> when other parts of the application are based around a common table-oriented data structure. That's why you don't usually see <I>Table Module</I> very much in the Java environment, although that may change as row sets become more widely used.
+	</P>
+
+
+	
+<H2>Example: Revenue Recognition with a Table Module (C#)</H2>
+	
+<P>Time to revisit the <A href="transactionScript.html#problem" tppabs="http://martinfowler.com/isa/transactionScript.html#problem">revenue recognition example</A> I used in the other domain modelling patterns, but this time with a <I>Table Module</I>. To recap, our mission is to recognize revenue on orders when the rules vary depending on the type of product. In this fantasy example we have different rules for word processors, spreadsheets, and databases.
+	</P>
+	
+<P>
+<I>Table Module</I> is based on a data schema of some kind, usually a relational data model (although in the future we may well see XML an model used in a similar way). In this case I'll use the relational schema from  Figure <A href="#TableModuleDB.gif">1</A>.
+	</P>
+	
+<A name="TableModuleDB.gif"></A><img align="top" src="TableModuleDB.gif" tppabs="http://martinfowler.com/isa/TableModuleDB.gif"><P>
+<I>Figure 1: Database schema for revenue recognition</I>
+</P>
+	
+<P>The classes that manipulate this data are of pretty much the same form, there is one <I>Table Module</I> class for each table. In the .NET architecture there is a data set object which provides an in-memory representation of a database structure. So it makes sense to create classes that operate on this data set. Each <I>Table Module</I> class has a data member of a Data Table, which is the .NET system class corresponding to a table within the data set. This ability to read a table is common to all the <I>Table Module</I>s and so can appear in the superclass
+	</P>
+	
+<pre>class TableModule... 
+		protected DataTable table;
+		protected TableModule(DataSet ds, String tableName) {
+			table = ds.Tables[tableName];
+		}
+</pre>	
+	
+<P>The subclass constructor calls the superclass constructor with the correct table name.
+	</P>
+	
+<pre>class Contract... 
+		public Contract (DataSet ds) : base (ds, "Contracts") {}
+</pre>
+	
+<P>This allows me to create a new <I>Table Module</I> by just passing in a data set to the <I>Table Module</I>'s constructor
+	</P>
+	
+<pre> 
+			contract = new Contract(dataset);
+</pre>	
+	
+<P>This keeps the code that creates the data set away from the <I>Table Module</I>s, following the guidelines of using ADO.NET.
+	</P>
+	
+<P>A useful capability is to use the C# indexer to get to a particular row in the data table given the primary key.
+	</P>
+	
+<pre>class Contract... 
+		public DataRow this [long key] {
+		get {
+			String filter = String.Format("ID = {0}", key);
+			return table.Select(filter)[0];  
+			}
+		}
+</pre>	
+	
+<P>The first piece of functionality is to calculate the revenue recognition for a contract, updating the revenue recognition tables accordingly. The amount recognized depends on the kind of product we have. Since this behavior mainly uses data from the contract table, I decided to add the method to the contract class.
+	</P>
+	
+<pre>class Contract... 
+		public void CalculateRecognitions (long contractID) {
+			DataRow contractRow = this[contractID];
+			Decimal amount = (Decimal)contractRow["amount"];
+			RevenueRecognition rr = new RevenueRecognition (table.DataSet);
+			Product prod = new Product(table.DataSet);
+			long prodID = GetProductId(contractID);
+			if (prod.GetProductType(prodID) == ProductType.WP) {
+				rr.Insert(contractID, amount, (DateTime) GetWhenSigned(contractID));
+			} else if (prod.GetProductType(prodID) == ProductType.SS) {
+				Decimal[] allocation = allocate(amount,3);
+				rr.Insert(contractID, allocation[0], (DateTime) GetWhenSigned(contractID));
+				rr.Insert(contractID, allocation[1], (DateTime) GetWhenSigned(contractID).AddDays(60));
+				rr.Insert(contractID, allocation[2], (DateTime) GetWhenSigned(contractID).AddDays(90));
+			} else if (prod.GetProductType(prodID) == ProductType.DB) {
+				Decimal[] allocation = allocate(amount,3);
+				rr.Insert(contractID, allocation[0], (DateTime) GetWhenSigned(contractID));
+				rr.Insert(contractID, allocation[1], (DateTime) GetWhenSigned(contractID).AddDays(30));
+				rr.Insert(contractID, allocation[2], (DateTime) GetWhenSigned(contractID).AddDays(60));
+			} else throw new Exception("invalid product id");
+		}
+		private Decimal[] allocate(Decimal amount, int by) {
+			Decimal lowResult = amount / by;
+			lowResult = Decimal.Round(lowResult,2);
+			Decimal highResult = lowResult + 0.01m;
+			Decimal[] results = new Decimal[by];
+			int remainder = (int) amount % by;
+			for (int i = 0; i &lt; remainder; i++) results[i] = highResult;
+			for (int i = remainder; i &lt; by; i++) results[i] = lowResult;
+			return results;
+		}
+</pre>	
+	
+<P>Usually I would use <A href="http://martinfowler.com/isa/Money.html"><I>Money</I></A> here, but for variety's sake, I'll show this using a decimal. I use a similar allocation method to the one I would use for a <A href="http://martinfowler.com/isa/Money.html"><I>Money</I></A>.
+	</P>
+	
+	
+<P>To carry this out, we need some behavior that's defined on the other classes. The product needs to be able to tell us which product type it is. We can do this with an enum for the product type and a lookup method.
+	</P>
+	
+<pre> 
+	public enum ProductType {WP, SS, DB};
+</pre>	
+	
+<pre>class Product... 
+		public ProductType GetProductType (long id) {
+			String typeCode = (String) this[id]["type"];
+			return (ProductType) Enum.Parse(typeof(ProductType), typeCode);
+		}
+</pre>	
+	
+<P>
+<code>GetProductType</code> encapsulates the data in the data table. There is an argument for doing this for all the columns of data, as opposed to accessing them directly as I did with the amount on the contract. While encapsulation is generally a Good Thing, I don't do it here because it doesn't fit in with the assumption of the environment that different parts of the system access the data set directly. There's no encapsulation when the data set moves over to the UI. So column access functions really only make sense when there's some additional functionality to be done, such as converting a string to a product type.	
+	</P>
+	
+<P>The other additional behavior is inserting a new revenue recognition record.
+	</P>
+	
+<pre>class RevenueRecognition... 
+		public long Insert (long contractID, Decimal amount, DateTime date) {
+			DataRow newRow = table.NewRow();
+			long id = GetNextID();
+			newRow["ID"] = id;
+			newRow["contractID"] = contractID;
+			newRow["amount"] = amount;
+			newRow["date"]= String.Format("{0:s}", date);
+			table.Rows.Add(newRow);
+			return id;
+		}
+</pre>	
+	
+<P>Again the point of this method is less to encapsulate the data row, and more to have a method instead of several lines of code that would get repeated.
+	</P>
+	
+<P>The second behavior is to sum up all the revenue recognized on a contract by a given date. Since this uses the revenue recognition table it makes sense to define the method there.
+	</P>
+	
+<pre>class RevenueRecognition... 
+		public Decimal RecognizedRevenue (long contractID, DateTime asOf) {
+			String filter = String.Format("ContractID = {0} AND date &lt;= #{1:d}#", contractID,asOf); 
+			DataRow[] rows = table.Select(filter);
+			Decimal result = 0m;
+			foreach (DataRow row in rows) {
+				result += (Decimal)row["amount"];
+			}
+			return result;
+		}
+</pre>	
+	
+<P>This fragment takes advantage of the really nice feature of ADO.NET that allows you to define a where clause and then select a subset of the data table to manipulate. Indeed you can go further and use an aggregate function. 
+	</P>
+	
+<pre>class RevenueRecognition... 
+		public Decimal RecognizedRevenue2 (long contractID, DateTime asOf) {
+			String filter = String.Format("ContractID = {0} AND date &lt;= #{1:d}#", contractID,asOf); 
+			String computeExpression = "sum(amount)";
+			Object sum = table.Compute(computeExpression, filter);
+			return (sum is System.DBNull) ? 0 : (Decimal) sum;
+		}
+</pre>	
+	
+	
+
+	
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

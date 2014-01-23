@@ -1,0 +1,181 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Transform View</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Transform View</H1>
+<HR>
+
+<P align="center">
+<I>A view that process domain data element by element and transforms it into HTML</I>
+</P>
+
+<P align="center">
+<img src="transformViewSketch.gif" tppabs="http://martinfowler.com/isa/transformViewSketch.gif">
+</P>
+
+	
+<P>When you issue requests for data to the domain and data source layers, you'll get back all the data you need to satisfy a request, but without the formatting you need to make a proper web page. The role of the view in <A href="mvc.html" tppabs="http://martinfowler.com/isa/mvc.html"><I>Model View Controller</I></A> is to render this data into a web page. Using <I>Transform View</I> means thinking of this as a transformation where you have the model's data as input and the HTML as output. 
+	</P>	
+
+
+
+<H2>How it Works</H2>
+	
+<P>The basic notion of <I>Transform View</I> is to write a program that will look at domain oriented data and convert it to HTML. The program walks the structure of the domain data and as it recognizes each form of domain data it writes out the particular piece of HTML for that data. If you think about this in an imperative way you might have a method called <code>renderCustomer</code> that takes a customer object and renders it into HTML. If the customer contains a bunch of orders, the <code>renderCustomer</code> method would loop over the orders calling <code>renderOrder</code>
+	
+</P>
+	
+<P>The key difference between <I>Transform View</I> and <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A> is the way in which the view is organized. A <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A> is organized around the output. A transform view is organized around separate transforms for each kind of input element. The transform is controlled by something like a simple loop that looks at each input element, finds the appropriate transform for that element, and then calls that transform on the input element. A typical <I>Transform View</I>'s elements can be arranged in any order without affecting the resulting output.
+	</P>	
+	
+<P>You can write a <I>Transform View</I> in any language, however at the moment the dominant choice for writing <I>Transform View</I>s is XSLT. The interesting thing about this is that XSLT is a functional programming language, similar to Lisp, Scheme, Haskell and other languages that never quite made it into the IS mainstream. As such it has a different kind of structure to it. Rather than explicitly calling routines, the language recognizes elements in the domain data and then invokes the appropriate rendering transformations.
+	</P>
+	
+<P>To carry out an XSLT transform we need to begin with some XML data. The simplest way this can happen is if the natural return type of the domain logic is either XML or something that is automatically transformable to XML. A good example of an automatic transform is a .NET object that can transform itself to XML. Failing that we need to produce the XML ourselves. A good way to do this is to populate a <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A> that can serialize itself into XML. That way the data can be assembled using a convenient api.In simpler cases a <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> can return XML directly. 
+	</P>
+	
+<P>The XML that's fed into the transform does not need to be a string, unless a string form is needed to cross a communication line. It's usually quicker and easier to produce a DOM and hand that to the transform.
+	</P>
+	
+<P>Once we have the XML we pass it to XSLT engine, increasingly these are available commercially. The logic for the transform is captured in an XSLT stylesheet which we also pass to the transformer. The transformer then applies the stylesheet to the input XML to yield the output HTML, which we can write directly to the HTTP response.
+	</P>	
+	
+
+
+<H2>When to Use it</H2>
+	
+<P>The choice between a <I>Transform View</I> and a <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A> mostly comes down to which environment is preferable for the team working on the view software to use. The presence of tools is a key factor here. Increasingly there are HTML editors which you can use to write <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A>s. Tools for XSLT are, at least so far, much less sophisticated. XSLT can also be an awkward language to master, due its functional programming style coupled with its awkward XML syntax.
+	</P>
+	
+<P>One of the strengths of XSLT is its portability. It can be used with almost any web platform. You can use the same XSLT to transform XML created from J2EE or .NET. This can help putting a common HTML view onto data from different sources.
+	</P>
+	
+<P>XSLT is also often easier if you are building a view on an XML document. Other environments usually require you to transform the XML document into an object, or indulge in walking the XML DOM, which is often complicated. XSLT fits naturally in an XML world.
+	</P>
+	
+<P>
+<I>Transform View</I> avoids two of the biggest problems with <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A>. It's easier to keep the transform focused only on rendering HTML, this avoids having too much other logic in the view. It's also easy to run the <I>Transform View</I> and capture the output for testing. This makes it easier to test the view and you don't need a web server to run the tests.
+	</P>	
+	
+<P> 
+<I>Transform View</I> transforms directly from domain-oriented XML into HTML. If you need to change the overall appearance of a web site, this can lead to you having to change multiple transform programs. Using common transforms, such as you can do with XSLT includes, helps reduce this problem. Indeed it's much easier to call common transformations using <I>Transform View</I> than it is using <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html"><I>Template View</I></A>. If you need to make global changes easily, or support multiple appearances for the same data, you might consider <A href="htmlRenderer.html" tppabs="http://martinfowler.com/isa/htmlRenderer.html"><I>Two Step View</I></A> which uses a two stage process. 
+	</P>
+
+
+
+<H2>Example: Simple Transform (Java)</H2>
+	
+<P>Setting up a simple transform involves preparing Java code to invoke the right stylesheet to form the response, and preparing the stylesheet to format the response. In these cases most of the response to a page is pretty generic, so it makes sense to use <A href="frontController.html" tppabs="http://martinfowler.com/isa/frontController.html"><I>Front Controller</I></A>. I'll only describe the command here, you should look at <A href="frontController.html" tppabs="http://martinfowler.com/isa/frontController.html"><I>Front Controller</I></A> to see how the command object fits in with the rest of the request response handling.
+	</P>
+	
+<P>All the command object does is invoke the methods on the model to obtain an XML input document, then pass that XML document through the XML processor. 
+	</P>
+	
+<pre>class AlbumCommand... 
+	public void process() {
+		try {
+			Album album = Album.findNamed(request.getParameter("name"));
+			Assert.notNull(album);
+			PrintWriter out = response.getWriter();
+			XsltProcessor processor = new SingleStepXsltProcessor("album.xsl");
+			out.print(processor.getTransformation(album.toXmlDocument()));
+		} catch (Exception e) {
+			throw new ApplicationException(e);
+		}
+	}
+</pre>	
+	
+<P>The XML document may look something like this
+	</P>
+	
+<pre>
+		&lt;album&gt;
+			&lt;title&gt;Zero Hour&lt;/title&gt;
+			&lt;artist&gt;Astor Piazzola&lt;/artist&gt;
+			&lt;trackList&gt;
+				&lt;track&gt;&lt;title&gt;Tanguedia III&lt;/title&gt;&lt;time&gt;4:39&lt;/time&gt;&lt;/track&gt;
+				&lt;track&gt;&lt;title&gt;Milonga del Angel&lt;/title&gt;&lt;time&gt;6:30&lt;/time&gt;&lt;/track&gt;
+				&lt;track&gt;&lt;title&gt;Concierto Para Quinteto&lt;/title&gt;&lt;time&gt;9:00&lt;/time&gt;&lt;/track&gt;
+				&lt;track&gt;&lt;title&gt;Milonga Loca&lt;/title&gt;&lt;time&gt;3:05&lt;/time&gt;&lt;/track&gt;
+				&lt;track&gt;&lt;title&gt;Michelangelo '70&lt;/title&gt;&lt;time&gt;2:50&lt;/time&gt;&lt;/track&gt;
+				&lt;track&gt;&lt;title&gt;Contrabajisimo&lt;/title&gt;&lt;time&gt;10:18&lt;/time&gt;&lt;/track&gt;
+				&lt;track&gt;&lt;title&gt;Mumuki&lt;/title&gt;&lt;time&gt;9:32&lt;/time&gt;&lt;/track&gt;
+			&lt;/trackList&gt;
+		&lt;/album&gt;
+	</pre>
+	
+<P>
+	
+</P>
+	
+	
+<P>The translation of the XML document is done by an XSLT program. Each template match matches a particular part of the XML and produces the appropriate HTML output for the page. In this case I've kept the formatting to a excessively simple level to just show the essentials. The following template clauses match the basic elements of the XML file.
+	</P>
+	
+<pre> 
+&lt;xsl:template match="album"&gt;
+	&lt;HTML&gt;&lt;BODY bgcolor="white"&gt;
+	&lt;xsl:apply-templates/&gt;
+	&lt;/BODY&gt;&lt;/HTML&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="album/title"&gt;
+	&lt;h1&gt;&lt;xsl:apply-templates/&gt;&lt;/h1&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="artist"&gt;
+		&lt;P&gt;&lt;B&gt;Artist: &lt;/B&gt;&lt;xsl:apply-templates/&gt;&lt;/P&gt;
+&lt;/xsl:template&gt;
+</pre>	
+	
+<P>These template matches handle the table. The table here has alternating rows highlighted in different colors. This is a good example of something that isn't possible with Cascading Style Sheets but is reasonable to do with XML.
+	</P>
+	
+<pre> 
+&lt;xsl:template match="trackList"&gt;
+	&lt;table&gt;&lt;xsl:apply-templates/&gt;&lt;/table&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="track"&gt;
+	&lt;xsl:variable name="bgcolor"&gt;
+		&lt;xsl:choose&gt;
+			&lt;xsl:when test="(position() mod 2) = 1"&gt;linen&lt;/xsl:when&gt;
+			&lt;xsl:otherwise&gt;white&lt;/xsl:otherwise&gt;
+		&lt;/xsl:choose&gt;
+	&lt;/xsl:variable&gt;
+	&lt;tr bgcolor="{$bgcolor}"&gt;&lt;xsl:apply-templates/&gt;&lt;/tr&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="track/title"&gt;
+	&lt;td&gt;&lt;xsl:apply-templates/&gt;&lt;/td&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="track/time"&gt;
+	&lt;td&gt;&lt;xsl:apply-templates/&gt;&lt;/td&gt;
+&lt;/xsl:template&gt;
+</pre>		
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

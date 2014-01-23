@@ -1,0 +1,149 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<A name="top"></A>
+<title>Organizing Domain Logic</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/" ><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/" >Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html" >Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html" >Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html" >Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo" >Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/" >ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Organizing Domain Logic</H1>
+<HR>	
+	
+<P>The simplest approach to storing domain logic is the <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>. A <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> is essentially a procedure that takes the input from the presentation, processes it with validations and calculations, stores data in the database, invokes any operations from other systems and replies with more data to the presentation perhaps doing more calculation to help organize and format the reply data. The fundamental organization is of a single procedure for each action that a user might want to do. Hence we can think of it being a script for an action, or business transaction. It doesn't have to be a single inlined procedure of code, pieces get separated out into subroutines and these subroutines can be shared between different <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s, but the driving force is still that of a procedure for each action. So a retailing system  might have <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s for checkout, add something  to the shopping cart, display delivery status, and so on. 
+	</P>
+	
+<P>The advantages of a <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> include: 
+	</P>
+	
+<UL>
+<LI style="">It's a simple procedural model that most developers understand</LI>
+<LI style="">It works well with a simple data source layer using <A href="rowDataGateway.html" tppabs="http://martinfowler.com/isa/rowDataGateway.html" ><I>Row Data Gateway</I></A> or <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html" ><I>Table Data Gateway</I></A>
+</LI>
+<LI style="">It's obvious how to set the transaction boundaries: start with opening a transaction and end with closing it. It's easy for tools to do this behind the scenes.</LI>
+</UL>
+	
+	
+	
+<P>Sadly there are also plenty of disadvantages, these disadvantages tend to appear as the complexity of the domain logic increases. Often there will be duplicated code as several transactions need to do similar things. Some of this can be dealt with by factoring out common subroutines, but even so much of the duplication is tricky to remove and harder to spot. The resulting application can end up being quite a tangled web of routines without a clear structure.
+	</P>
+	
+<P>Of course complex logic is where objects come in, and the object-oriented way to handle this problem is with a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. For a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> the primary organization is of building up a model of our domain organized primarily about the nouns in the domain. So a leasing system would have classes for lease, asset, etc. The logic for handling validations and calculations would be placed into this domain model. A shipment object might contain the logic to calculate the shipping charge for a delivery. There might still be routines for calculating a bill, but such a procedure would quickly delegate to a method in the <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>.
+	</P>
+	
+<P>Using a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> as opposed to a <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> is the essence of the paradigm shift that object-oriented people talk about so much. Rather than one routine having all the logic for a user action, each object takes a part of the logic that's relevant to the object. If you're not used to a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> then learning to work with it can be very frustrating as you chase from object to object trying to find where the behavior is. 
+	</P>
+	
+<P>It's hard to capture the essence of the difference with a simple example, but in the discussions of the patterns I've tried to do that by building a simple piece of domain logic both ways. The easiest way to see the difference is by looking at the sequence diagrams for the two approaches. The essential problem is that different kinds of product have different algorithms for figuring out how to recognize revenue on some given contract. The calculation method has to determine what kind of product a given contract is for, apply to correct algorithm, and then create revenue recognition objects to capture the results of the calculation. (For simplicity I'm ignoring the database interaction issues.)
+	</P>
+	
+<A name="transactionScriptSeq.gif"></A><img align="top" src="transactionScriptSeq.gif" tppabs="http://martinfowler.com/isa/transactionScriptSeq.gif"><P>
+<I>Figure 1: A transaction script's way of calculating revenue recognitions</I>
+</P>
+	
+<P>In  Figure <A href="#transactionScriptSeq.gif">1</A> the <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>'s method does all the work. The underlying objects are just <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html" ><I>Table Data Gateway</I></A>s, and  they just pass data to the transaction script.
+	</P>	
+	
+<A name="domainModelSeq.gif"></A><img align="top" src="domainModelSeq.gif" tppabs="http://martinfowler.com/isa/domainModelSeq.gif"><P>
+<I>Figure 2: A domain model's way of calculating revenue recognitions</I>
+</P>
+	
+<P>Contrastingly, in the  Figure <A href="#domainModelSeq.gif">2</A> we see multiple objects each forwarding part of the behavior to another, until a strategy object creates the results.
+	</P>	
+	
+<P>The value of a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> lies in the fact that once you've got used to things, there are many techniques that allow you to handle more and more complex logic in a well organized way. As we get more and more algorithms for calculating revenue recognition, we can add these by adding new recognition strategy objects. With the <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> we are adding more conditions to the conditional logic of the script. Once your mind is as warped to objects as mine is, you'll find you prefer a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> even in fairly simple cases.
+	</P>
+	
+<P>The costs of a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> come from the complexity of using it and complexity of your data source layer. It takes time for people new to rich object models to get used to using a rich <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. Often developers may need to spend several months working on a project that uses a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> before their paradigms are shifted. However once you've got used to your first <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> you're usually infected for life and it becomes easy to work with them in the future - that's how object bigots like me are made. However a significant minority of developers seem to be unable to make the shift.
+	</P>
+	
+<P>Even once you've made the shift, you still have to deal with the database mapping. The richer your <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>, the more complex your mapping to a relational database (usually using <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html" ><I>Data Mapper</I></A>). A sophisticated data source layer is much like a fixed cost, it takes a fair amount of money (if you buy one) or time (if you build one) to get a good data source layer together, but once you have you can do a lot with it.
+	</P>
+	
+<P>There is a third choice for structuring domain logic - <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A>. At very first blush the <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> looks like a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> since both will have classes for contracts, products and revenue recognitions. The vital difference is that whilst a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> has one instance of contract for each contract in the database, a <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> has only one instance. A <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> is designed to work with <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A>. So the client of a contract <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> will first issue queries to the database to form a <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A>, then it will create a contract object and pass it the <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A> as an argument. The client can then invoke operations on the contract to do various things ( Figure <A href="#tableModuleSeq.gif">3</A>). If it wants to do something to an individual contract it must pass in an id. 
+	</P>
+	
+<A name="tableModuleSeq.gif"></A><img align="top" src="tableModuleSeq.gif" tppabs="http://martinfowler.com/isa/tableModuleSeq.gif"><P>
+<I>Figure 3: Calculating revenue recognitions with a <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A></I>
+</P>
+	
+<P>A <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> is in many ways a middle ground between a <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> and a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. Organizing the domain logic around tables provides more structure than straight procedures and makes it easier to find and remove duplication. However you can't use a number of the techniques that a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> can use for finer grained structure of the logic: such as inheritance, strategies and other OO patterns. 
+	</P>
+	
+<P>The biggest advantage of a <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> is how it fits into the rest of the architecture. Many GUI environments are built to work on the results of a SQL query organized in a <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A>. Since a <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> also works on a <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A> you can easily run a query, manipulate the results in the <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> and pass the manipulated data to the GUI for display. You can also use the <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> on the way back for further validations and calculations. A number of platforms, particularly Microsoft's COM and .NET use this style of development.
+	</P>
+	
+<P>So far I've talked about the three styles of domain logic as exclusive alternatives. While it helps to explain them by showing them in a pure form, applications commonly mix <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s with <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. (Other mixes are possible, but are rarer.) In a mixed approach the question is how much behavior to put in the script and how much in the domain objects. It's a continuum, but three useful points to discuss are a dominant <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> a dominant <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> and the controller-entity mix.
+	</P>
+	
+<P>With a dominant <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> you have most of your domain logic in <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s, and you have some common behavior in relatively simple domain objects. Since the domain objects are simple, they usually map one-to-one with the database and thus you can use a simpler data source layer such as <A href="activeRecord.html" tppabs="http://martinfowler.com/isa/activeRecord.html" ><I>Active Record</I></A>. 
+	</P>
+	
+<P>A dominant <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> will have most logic in domain objects with just some coordination code in <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s. The middle way here is the <B>controller-entity</B> style the names of which come from a common practice influenced heavily by <a href="http://www.amazon.com/exec/obidos/ASIN/0201544350" >[Jacobson et al]</a>. The point here is to have any logic that's particular to a single transaction or use-case placed in <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s, which are commonly referred to as controllers. These are different controllers to the input controller in <A href="mvc.html" tppabs="http://martinfowler.com/isa/mvc.html" ><I>Model View Controller</I></A> or the <A href="applicationController.html" tppabs="http://martinfowler.com/isa/applicationController.html" ><I>Application Controller</I></A> so I use the term <B>use-case controller</B>. Behavior that's used in more than one use case goes on the domain objects which are called entities. 
+	</P>
+	
+<P>Although the controller entity approach is a common one, it's not one that I've ever liked much. The use-case controllers, like any <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> tend to encourage duplicate code. My view is that if you decide to use a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> at all you really should go the whole hog and make it dominant. The one exception to this is if you've started with a design that uses <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> with <A href="rowDataGateway.html" tppabs="http://martinfowler.com/isa/rowDataGateway.html" ><I>Row Data Gateway</I></A>, then it makes sense to move duplicated behavior on to the <A href="rowDataGateway.html" tppabs="http://martinfowler.com/isa/rowDataGateway.html" ><I>Row Data Gateway</I></A>s. This will turn them into a simple <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> using <A href="activeRecord.html" tppabs="http://martinfowler.com/isa/activeRecord.html" ><I>Active Record</I></A>. But I would only do that to improve a design that's showing cracks, I wouldn't start that way.
+	</P>
+	
+<P>So how do you choose between the three? It's not an easy choice, but it very much depends on how complex your domain logic is.  Figure <A href="#domainTradeOff.gif">4</A> is one of these non-scientific graphs that really irritate me in powerpoint presentations as it has utterly unquantified axes. However it helps to visualize my sense of how the three compare. With simple domain logic the  <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> is less attractive because the cost of understanding it and the complexity of the data source add a lot of effort to developing it that doesn't get paid back. However as the complexity of the domain logic increases, then the other approaches tend to hit a wall where adding more features gets exponentially more difficult. 
+	</P>
+	
+<A name="domainTradeOff.gif"></A><img align="top" src="domainTradeOff.gif" tppabs="http://martinfowler.com/isa/domainTradeOff.gif"><P>
+<I>Figure 4: A sense of the relationships between complexity and effort for different domain logic styles</I>
+</P>
+	
+<P>Your problem, of course, is to figure out where on that x axis your application lies. Sadly there's no good way of measuring that, so your only alternative is to find some experienced people who can make an initial analysis of the requirements and make a judgement call. 
+	</P>
+	
+<P>There are some factors that alter the curves a bit. TA team that's familiar with <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> will lower the initial cost of using a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. It won't lower it to same starting point as the others, because of the data source complexity, but the better the team is, the more I'm inclined to use a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. 
+	</P>
+	
+<P>The attractiveness of a <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> depends very much on the support for a common <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A> structure in your environment. If you have an environment like .NET and Visual Studio where lots of tools work around a <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A> then that makes a <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> much more attractive. Indeed I don't see a reason to use <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s in a .NET environment. However if there's no special tooling for <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A>s, then I wouldn't bother with <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A>.
+	</P>
+	
+<P>Once you've made your decision it isn't completely cast in stone, but it is more tricky to change. So it's worth up front thought to decide which way to go. If you find you did go the wrong way, then if you started with <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> don't hesitate to refactor towards <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. If you started with <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> however, then going to <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> is usually less worthwhile unless you can simplify your data source layer.
+	</P>
+
+<a name="N166"></a>
+
+<H2>The interface to the domain logic</H2>
+	
+<P>When you have server domain logic that has to communicate with the client, an important question is what kind of interface should the server have? The main choice here is whether to have an http based interface or a object-oriented interface.
+	</P>
+	
+<P>The most common case of an http interface is that to a web browser, and of course if you have an HTML presentation that's your main option.Http based interfaces can be used for more than just web presentations. The obvious recent candidate is the web service, which is communication between systems over http, typically using XML. XML based http communication is handy for several reasons. It easily allows a lot of data to be sent, in a structured form, in a single round trip. Since remote calls need to be minimized, that's a good thing. The fact that XML is a common format with parsers available in many platforms allows systems built on very different systems to communicate, as does the fact that http is pretty universal these days. The fact that XML is textual makes it easy to see what's going across the wire. Http is also easy to get through firewalls while security and political reasons often make it difficult to open up other ports.
+	</P>
+	
+<P>Despite these reasons, however, an object-oriented interface of classes and methods has value too. An http interface isn't very explicit. It's difficult to see exactly what requests can be processed with what data. An object-oriented interface has methods with names that take parameters with names. This makes it much easier to see what can be done with the interface. Communications that don't go through a firewall can be made much more explicit by using such an interface. The methods also provide good spots to provide controls such as security and transactions. 
+	</P>
+	
+<P>Of course you can have the best of both worlds by layering an http interface over a object-oriented interface. All calls to the web server are translated by the web server into calls on an underlying object oriented interface. To an extent this gives you the best of both worlds, but it does add complexity since you'll need both the web server and the machinery for a remote OO interface. You should only do this if you need both an http and a remote OO API, or if the facilities of the remote OO API for security and transaction handling make it easier to deal with these issues than using non-remote objects.
+	</P>
+	
+<P>In any case two patterns you need to be familiar with for this work are <A href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html" ><I>Remote Facade</I></A> and <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html" ><I>Data Transfer Object</I></A>, I talk more about those in a later chapter.
+	</P>
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/" ><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/" ><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/" >Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

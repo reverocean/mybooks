@@ -1,0 +1,358 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Class Table Inheritance</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Class Table Inheritance</H1>
+<HR>
+
+<P align="center">
+<I>Represent an inheritance hierarchy of classes with one table for each class</I>
+</P>
+
+<P align="center">
+<img src="classInheritanceTableSketch.gif" tppabs="http://martinfowler.com/isa/classInheritanceTableSketch.gif"></P>
+
+
+<H2>How it Works</H2>
+	
+<P>The straightforward thing about <I>Class Table Inheritance</I> is that it has one table per class in the domain model. The fields in the domain class map directly to fields in the corresponding tables.
+	</P>
+	
+<P>As with the other inheritance mappings the fundamental approach of <A href="inheritanceMappers.html" tppabs="http://martinfowler.com/isa/inheritanceMappers.html"><I>Inheritance Mappers</I></A> applies.
+	</P>
+	
+<P>One issue is how to link together the corresponding rows of the database tables. One scheme is to use a common primary value, so the row of key 101 in the footballers table and the row of key 101 in the players table correspond to the same domain object. Since the superclass table has a row for each row in the other tables, the primary keys are going to be unique across the tables if you use this scheme. An alternative is to let each table have its own primary and use foreign keys into the superclass table to tie the rows together.
+	</P>
+	
+<P>The biggest implementation issue with <I>Class Table Inheritance</I> is how to bring the data back from multiple tables in an efficient manner. Obviously making a call for each table isn't nice since you have multiple calls to the database. You can avoid this by doing a join across the various component tables. However joins for more than three or four tables tend to be slow due to the way databases do their optimizations. You also need to often query the root table first to find what kind of object you need to load and then do a second query to get the full collection of data. To do this well you need to store a type code in the root table, without a type code you need to search each table to get the value.
+	</P>
+
+
+<H2>When to Use it</H2>
+	
+<P>
+<I>Class Table Inheritance</I>, <A href="singleTableInheritance.html" tppabs="http://martinfowler.com/isa/singleTableInheritance.html"><I>Single Table Inheritance</I></A> and <A href="leafTableInheritance.html" tppabs="http://martinfowler.com/isa/leafTableInheritance.html"><I>Concrete Table Inheritance</I></A> are the three alternatives to consider for inheritance mapping.
+	</P>
+	
+<P>The strengths of <I>Class Table Inheritance</I> are:
+	</P>
+	
+<UL>
+<LI style="">All columns are relevant for every row so tables are easier to understand and don't waste space</LI>
+<LI style="">The relationship between the domain model and the database is very straightforward</LI>
+</UL>
+		
+	
+<P>The weaknesses of <I>Class Table Inheritance</I> are:
+	</P>
+	
+<UL>
+<LI style="">To load an object you need to touch multiple tables, which means a join or multiple queries and sewing in memory</LI>
+<LI style="">Any movement of fields up or down the hierarchy causes database changes</LI>
+<LI style="">The supertype tables may become a bottleneck as they have to be accessed frequently</LI>
+<LI style="">The high normalization may make it hard to understand for ad hoc queries</LI>
+</UL>
+		
+	
+		
+	
+<P>You don't have to choose just one inheritance mapping pattern for one class hierarchy. You could use <I>Class Table Inheritance</I> for the classes at the top of the hierarchy and a bunch of <A href="leafTableInheritance.html" tppabs="http://martinfowler.com/isa/leafTableInheritance.html"><I>Concrete Table Inheritance</I></A> for those lower down.
+	</P>
+
+
+<H2>Further Reading</H2>
+	
+<P>A number of IBM texts refer to this as Root-Leaf mapping <a href="http://www.amazon.com/exec/obidos/ASIN/0201616173">[Brown et al]</a>
+	
+</P>
+
+
+	
+<H2>Example: Players and their kin (C#)</H2>
+	
+<P>Here's an implementation for the sketch. Again I'll follow the familiar (if perhaps a little tedious) theme of players and the like using  <A href="inheritanceMappers.html" tppabs="http://martinfowler.com/isa/inheritanceMappers.html"><I>Inheritance Mappers</I></A>
+	
+</P>
+	
+<A name="inheritanceMappersSketch.gif"></A><img align="top" src="inheritanceMappersSketch.gif" tppabs="http://martinfowler.com/isa/inheritanceMappersSketch.gif"><P>
+<I>Figure 1: The generic class diagram of <A href="inheritanceMappers.html" tppabs="http://martinfowler.com/isa/inheritanceMappers.html"><I>Inheritance Mappers</I></A></I>
+</P>
+	
+<P>Each class needs to define the table that holds the data for the class and a type code for the class.
+	</P>
+	
+<pre>class AbstractPlayerMapper... 
+		abstract public String TypeCode {get;}
+		protected static String TABLENAME = "Players";
+</pre>	
+	
+<pre>class FootballerMapper... 
+		public override String TypeCode {
+			get {return "F";}
+		}
+		protected new static String TABLENAME = "Footballers";
+</pre>	
+	
+<P>Unlike the other inheritance examples, this one does not have a overridden table name,  since we have to have the table name for this class even when the instance is an instance of the subclass.
+	</P>
+	
+	
+<a name="N80"></a>
+	
+<H3>Loading an object</H3>
+			
+<P>If you've been reading the other mappings, you'll know the first step is the find method on the concrete mappers.
+			</P>
+		
+<pre>class FootballerMapper... 
+		public Footballer Find(long id) {
+			return (Footballer) AbstractFind (id, TABLENAME);
+		}
+</pre>	
+		
+<P>The abstract find method looks for a row matching the key and, if successful, creates a domain object and calls the load method on that object.
+		</P>		
+		
+<pre>class Mapper... 
+		public DomainObject AbstractFind(long id, String tablename) {
+			DataRow row = FindRow (id, tableFor(tablename));
+			if (row == null) return null;
+			else {
+				DomainObject result = CreateDomainObject();
+				result.Id = id;
+				Load(result);
+				return result;
+			}
+		}
+		protected DataTable tableFor(String name) {
+			return Gateway.Data.Tables[name];
+		}
+		protected DataRow FindRow(long id, DataTable table) {
+			String filter = String.Format("id = {0}", id);
+			DataRow[] results = table.Select(filter); 
+			return (results.Length == 0) ? null : results[0];
+		}
+		protected DataRow FindRow (long id, String tablename) {
+			return FindRow(id, tableFor(tablename));
+		}
+		protected abstract DomainObject CreateDomainObject();
+</pre>	
+		
+<pre>class FootballerMapper... 
+		protected override DomainObject CreateDomainObject(){
+			return new Footballer();
+		}
+</pre>	
+		
+<P>There is one load method for each class which loads the data defined by that class.
+		</P>
+		
+<pre>class FootballerMapper... 
+		protected override void Load(DomainObject obj) {
+			base.Load(obj);
+			DataRow row = FindRow (obj.Id, tableFor(TABLENAME));
+			Footballer footballer = (Footballer) obj;
+			footballer.club = (String)row["club"];
+		}
+</pre>	
+		
+<pre>class AbstractPlayerMapper... 
+		protected override void Load(DomainObject obj) {
+			DataRow row = FindRow (obj.Id, tableFor(TABLENAME));
+			Player player = (Player) obj;
+			player.name = (String)row["name"];
+		}
+</pre>	
+		
+<P>As with the other sample code, but more noticeably in this case, I'm relying on the fact that the ADO.NET data set has brought the data from the database and cached it into memory. This allows me to make several accesses to the table based data structure without a high performance cost. If you are going directly to the database, you'll need to reduce that load. For this example you might do this by creating a join across all the tables and manipulating that.
+		</P>
+		
+<P>The player mapper determines which kind of player it needs to find, and then delegates the correct concrete mapper.
+		</P>
+		
+<pre>class PlayerMapper... 
+		public Player Find (long key) {
+			DataRow row = FindRow(key, tableFor(TABLENAME));
+			if (row == null) return null;
+			else {
+				String typecode = (String) row["type"];
+				if (typecode == bmapper.TypeCode)
+					return bmapper.Find(key);
+				if (typecode == cmapper.TypeCode)
+					return cmapper.Find(key);
+				if (typecode == fmapper.TypeCode)
+					return fmapper.Find(key);
+				throw new Exception("unknown type");
+			}
+		}
+		protected static String TABLENAME = "Players";
+</pre>	
+	
+	
+<a name="NB3"></a>
+	
+<H3>Updating an object</H3>
+		
+<P>The update method appears on the mapper superclass
+		</P>
+		
+<pre>class Mapper... 
+		public virtual void Update (DomainObject arg) {
+			Save (arg);
+		}
+</pre>		
+		
+<P>It's implemented through a series of save methods, one for each class in the hierarchy.
+		</P>
+		
+<pre>class FootballerMapper... 
+		protected override void Save(DomainObject obj) {
+			base.Save(obj);
+			DataRow row = FindRow (obj.Id, tableFor(TABLENAME));
+			Footballer footballer = (Footballer) obj;
+			row["club"] = footballer.club;
+		}
+</pre>	
+		
+<pre>class AbstractPlayerMapper... 
+		protected override void Save(DomainObject obj) {
+			DataRow row = FindRow (obj.Id, tableFor(TABLENAME));
+			Player player = (Player) obj;
+			row["name"] = player.name;
+			row["type"] = TypeCode;
+		}
+</pre>	
+		
+<P>The player mapper's update method overrides the general method to forward to the correct concrete mapper.
+		</P>
+		
+<pre>class PlayerMapper... 
+		public override void Update (DomainObject obj) {
+			MapperFor(obj).Update(obj);
+		}
+		private Mapper MapperFor(DomainObject obj) {
+			if (obj is Footballer)
+				return fmapper;
+			if (obj is Bowler)
+				return bmapper;
+			if (obj is Cricketer)
+				return cmapper;
+			throw new Exception("No mapper available");
+		}
+</pre>			
+			
+	
+<a name="ND6"></a>
+	
+<H3>Inserting an object</H3>
+		
+<P>The method for inserting an object is declared on the mapper superclass. It has two stages, first creating new database rows to hold the data, secondly using the save methods to update these blank rows with the necessary data.
+		</P>
+		
+<pre>class Mapper... 
+		public virtual void Update (DomainObject arg) {
+			Save (arg);
+		}
+</pre>		
+		
+<P>Each class inserts a row into its table
+		</P>
+		
+<pre>class FootballerMapper... 
+		protected override void AddRow (DomainObject obj) {
+			base.AddRow(obj);
+			InsertRow (obj, tableFor(TABLENAME));
+		}
+</pre>	
+		
+<pre>class AbstractPlayerMapper... 
+		protected override void AddRow (DomainObject obj) {
+			InsertRow (obj, tableFor(TABLENAME));
+		}
+</pre>	
+		
+<pre>class Mapper... 
+		abstract protected void AddRow (DomainObject obj);
+		protected virtual void InsertRow (DomainObject arg, DataTable table) {
+			DataRow row = table.NewRow();
+			row["id"] = arg.Id;
+			table.Rows.Add(row);
+		}
+</pre>		
+		
+<P>The player mapper delegates to the appropriate concrete mapper
+		</P>
+		
+<pre>class PlayerMapper... 
+		public override long Insert (DomainObject obj) {
+			return MapperFor(obj).Insert(obj);
+		}
+</pre>			
+	
+	
+<a name="NFE"></a>
+	
+<H3>Deleting an object</H3>
+		
+<P>To delete an object, each class deletes a row from the corresponding table in the database.
+		</P>
+		
+<pre>class FootballerMapper... 
+		public override void Delete(DomainObject obj) {
+			base.Delete(obj);
+			DataRow row = FindRow(obj.Id, TABLENAME);
+			row.Delete();
+		}
+</pre>	
+		
+<pre>class AbstractPlayerMapper... 
+		public override void Delete(DomainObject obj) {
+			DataRow row = FindRow(obj.Id, tableFor(TABLENAME));
+			row.Delete();
+		}
+</pre>	
+		
+<pre>class Mapper... 
+		public abstract void Delete(DomainObject obj);
+</pre>		
+		
+<P>The player mapper, again wimps out of all the hard work and just delegates to the concrete mapper.
+		</P>
+		
+<pre>class PlayerMapper... 
+		override public void Delete(DomainObject obj) {
+			MapperFor(obj).Delete(obj);
+		}
+</pre>					
+	
+	
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

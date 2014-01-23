@@ -1,0 +1,341 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Single Table Inheritance</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Single Table Inheritance</H1>
+<HR>
+
+<P align="center">
+<I>Represent an inheritance hierarchy of classes as a single table which has fields for all the fields of the various classes</I>
+</P>
+
+<P align="center">
+<img src="singleInheritanceTableSketch.gif" tppabs="http://martinfowler.com/isa/singleInheritanceTableSketch.gif"></P>
+
+<H2>How it Works</H2>
+	
+<P>In this inheritance mapping scheme we have one table that contains all the data for all the classes in the inheritance hierarchy. Each class stores the data that's relevant for that class into one row of the table. Any columns in the database that aren't relevant for the appropriate class are left empty.
+	</P>
+	
+<P>The basic mapping behavior follows the general scheme of <A href="inheritanceMappers.html" tppabs="http://martinfowler.com/isa/inheritanceMappers.html"><I>Inheritance Mappers</I></A>. 
+	</P>	
+	
+<P>When loading an object into memory you need to know which class to instantiate. To do this you have a field in the table that indicates which class should be used. This can be the name of the class or a code field. A code field needs to be interpreted by some code to map it to the relevant class. This code needs to be extended when a class is added to the hierarchy. If you embed the class name into the table you can just use it directly to instantiate an instance. The class name, however, will take up more space and maybe less easy to process by those using the database table structure directly, as well as more closely coupling the class structure to the database schema. 
+	</P>
+	
+<P>When loading data, you read the code first to figure out which subclass to instantiate. On saving the data the code needs be written out by the superclass in the hierarchy. 
+	</P>
+
+
+<H2>When to Use it</H2>
+	
+<P>
+<I>Single Table Inheritance</I> is one of the options for mapping the fields in an inheritance hierarchy to a relational database. The alternatives are <A href="classTableInheritance.html" tppabs="http://martinfowler.com/isa/classTableInheritance.html"><I>Class Table Inheritance</I></A> and <A href="leafTableInheritance.html" tppabs="http://martinfowler.com/isa/leafTableInheritance.html"><I>Concrete Table Inheritance</I></A>
+	
+</P>
+	
+<P>The strengths of <I>Single Table Inheritance</I> are:
+	</P>
+	
+<UL>
+<LI style="">A single table to worry about on the database</LI>
+<LI style="">No joins in retrieving data</LI>
+<LI style="">Any refactoring that pushes fields up or down the hierarchy doesn't require you to change the database.</LI>
+</UL>
+	
+	
+	
+<P>The weaknesses of <I>Single Table Inheritance</I> are:
+	</P>	
+	
+<UL>
+<LI style="">Fields are sometimes relevant and sometimes not, which can be confusing to people using the tables directly.</LI>
+<LI style="">Columns that are only used by some subclasses lead to wasted space in the database. The degree of how much this is actually a problem depends on the specific data characteristics and how well the database compresses empty columns. Oracle, for example, is very efficient about trimming wasted space particularly if you keep your optional columns to the right hand side of the database table. Each database will have it's own tricks for this.</LI>
+<LI style="">The single table may end up being too large with many indexes and frequent locking. This may hurt performance. You can avoid this by having separate index tables that either list keys of rows that have a certain property, or copy a subset of fields relevant to an index.</LI>
+<LI style="">You only have a single name space for fields, so you have to be sure that you don't want to use the same name for different fields. You can do this by using compound names that use the name of the class as a prefix or suffix</LI>
+</UL>
+	
+	
+	
+	
+<P>It's important to remember that you don't need to use one form of inheritance mapping for you whole hierarchy. It's perfectly find to map half a dozen similar classes in a single table, but to use <A href="leafTableInheritance.html" tppabs="http://martinfowler.com/isa/leafTableInheritance.html"><I>Concrete Table Inheritance</I></A> for a couple of classes that have a lot of specific data.
+	</P>
+	
+
+
+	
+<H2>Example: A single table for players (Java)</H2>
+	
+<P>I've based this code example, like the other inheritance examples, on <A href="inheritanceMappers.html" tppabs="http://martinfowler.com/isa/inheritanceMappers.html"><I>Inheritance Mappers</I></A>
+	
+</P>
+	
+<A name="inheritanceMappersSketch.gif"></A><img align="top" src="inheritanceMappersSketch.gif" tppabs="http://martinfowler.com/isa/inheritanceMappersSketch.gif"><P>
+<I>Figure 1: The generic class diagram of <A href="inheritanceMappers.html" tppabs="http://martinfowler.com/isa/inheritanceMappers.html"><I>Inheritance Mappers</I></A></I>
+</P>
+	
+<P>Each mapper needs to be linked to a data table in an ADO.NET data set. This link can be made generically in the mapper superclass. The gateway's data property is a data set which can be loaded by a query.
+	</P>
+	
+<pre>class Mapper... 
+		protected DataTable table {
+			get {return Gateway.Data.Tables[TableName];}
+		}
+		protected Gateway Gateway;
+		abstract protected String TableName {get;}
+</pre>	
+	
+<P>Since there is only one table, this can be defined by the abstract player mapper.
+	</P>
+	
+<pre>class AbstractPlayerMapper... 
+		protected override String TableName {
+			get {return "Players";}
+		}
+</pre>	
+	
+<P>Each class needs a type code to help the mapper code figure out what kind of player it has to deal with. The type code is defined on the superclass and implemented in the subclasses.
+	</P>
+	
+<pre>class AbstractPlayerMapper... 
+		abstract public String TypeCode {get;}
+</pre>	
+			
+<pre>class CricketerMapper... 
+		public const String TYPE_CODE = "C";
+		public override String TypeCode {
+			get {return TYPE_CODE;}
+		}
+</pre>	
+	
+<P>The player mapper has fields for each of the three concrete mapper classes
+	</P>
+	
+<pre>class PlayerMapper... 
+		private BowlerMapper bmapper;
+		private CricketerMapper cmapper;
+		private FootballerMapper fmapper;
+		public PlayerMapper (Gateway gateway) : base (gateway) {
+			bmapper = new BowlerMapper(Gateway);
+			cmapper = new CricketerMapper(Gateway);
+			fmapper = new FootballerMapper(Gateway);
+		}
+</pre>			
+	
+<a name="N88"></a>
+	
+<H3>Loading an object from the database</H3>
+			
+<P>Each concrete mapper class has a find method to get an object from the data.
+			</P>
+			
+<pre>class CricketerMapper... 
+		public Cricketer Find(long id) {
+			return (Cricketer) AbstractFind(id);
+		}
+</pre>	
+			
+<P>This calls generic behavior to find an object
+			</P>
+			
+<pre>class Mapper... 
+		protected DomainObject AbstractFind(long id) {
+			DataRow row = FindRow(id);
+			return (row == null) ? null : Find(row);
+		}
+		protected DataRow FindRow(long id) {
+			String filter = String.Format("id = {0}", id);
+			DataRow[] results = table.Select(filter); 
+			return (results.Length == 0) ? null : results[0];
+		}
+		public DomainObject Find (DataRow row) {
+			DomainObject result = CreateDomainObject();
+			Load(result, row);
+			return result;
+		}
+		abstract protected DomainObject CreateDomainObject();
+</pre>	
+			
+<pre>class CricketerMapper... 
+		protected override DomainObject CreateDomainObject() {
+			return new Cricketer();
+		}
+</pre>	
+			
+			
+<P>I load the data into the new object with a series of load methods, one on each class in the hierarchy.
+			</P>
+			
+<pre>class CricketerMapper... 
+		protected override void Load(DomainObject obj, DataRow row) {
+			base.Load(obj,row);
+			Cricketer cricketer = (Cricketer) obj;
+			cricketer.battingAverage = (double)row["battingAverage"];
+		}
+</pre>	
+			
+<pre>class AbstractPlayerMapper... 
+		protected override void Load(DomainObject obj, DataRow row) {
+			base.Load(obj, row);
+			Player player = (Player) obj;
+			player.name = (String)row["name"];
+		}
+</pre>	
+			
+<pre>class Mapper... 
+		protected virtual void Load(DomainObject obj, DataRow row) {
+			obj.Id = (int) row ["id"];
+		}
+</pre>	
+			
+<P>I can also load a player through the player mapper. It needs to read the data and use the type code to determine which concrete mapper to use.
+			</P>
+			
+<pre>class PlayerMapper... 
+		public Player Find (long key) {
+			DataRow row = FindRow(key);
+			if (row == null) return null;
+			else {
+				String typecode = (String) row["type"];
+				switch (typecode){
+					case BowlerMapper.TYPE_CODE: 
+						return (Player) bmapper.Find(row);
+					case CricketerMapper.TYPE_CODE: 
+						return (Player) cmapper.Find(row);
+					case FootballerMapper.TYPE_CODE: 
+						return (Player) fmapper.Find(row);
+					default:
+						throw new Exception("unknown type");
+				}
+			}
+		}
+</pre>			
+	
+	
+<a name="NBD"></a>
+	
+<H3>Updating an object</H3>
+		
+<P>The basic operation for updating an object is the same for all objects, so I can define the operation on the mapper superclass.
+		</P>
+		
+<pre>class Mapper... 
+		public virtual void Update (DomainObject arg) {
+			Save (arg, FindRow(arg.Id));
+		}
+</pre>	
+		
+<P>The save method is similar to the load, each class defines it to save the data in that class.
+		</P>
+			
+<pre>class CricketerMapper... 
+		protected override void Save(DomainObject obj, DataRow row) {
+			base.Save(obj, row);
+			Cricketer cricketer = (Cricketer) obj;
+			row["battingAverage"] = cricketer.battingAverage;
+		}
+</pre>	
+			
+<pre>class AbstractPlayerMapper... 
+		protected override void Save(DomainObject obj, DataRow row) {
+			Player player = (Player) obj;
+			row["name"] = player.name;
+			row["type"] = TypeCode;
+		}
+</pre>	
+		
+<P>The player mapper forwards to the appropriate concrete mapper
+		</P>
+		
+<pre>class PlayerMapper... 
+		public override void Update (DomainObject obj) {
+			MapperFor(obj).Update(obj);
+		}
+		private Mapper MapperFor(DomainObject obj) {
+			if (obj is Footballer)
+				return fmapper;
+			if (obj is Bowler)
+				return bmapper;
+			if (obj is Cricketer)
+				return cmapper;
+			throw new Exception("No mapper available");
+		}
+</pre>				
+	
+	
+<a name="NE0"></a>
+	
+<H3>Inserting an object</H3>
+		
+<P>Insertions are similar to updates, the only real difference is that a new row needs to be made in the table before saving
+		</P>
+		
+<pre>class Mapper... 
+		public virtual long Insert (DomainObject arg) {
+			DataRow row = table.NewRow();
+			arg.Id = GetNextID();
+			row["id"] = arg.Id;
+			Save (arg, row);
+			table.Rows.Add(row);
+			return arg.Id;
+		}
+</pre>	
+		
+<pre>class PlayerMapper... 
+		public override long Insert (DomainObject obj) {
+			return MapperFor(obj).Insert(obj);
+		}
+</pre>				
+	
+	
+<a name="NF3"></a>
+	
+<H3>Deleting an object</H3>
+		
+<P>Deletes are pretty simple, defined at the abstract mapper level or in the player wrapper.
+		</P>
+		
+<pre>class Mapper... 
+		public virtual void Delete(DomainObject obj) {
+			DataRow row = FindRow(obj.Id);
+			row.Delete();
+		}
+</pre>	
+		
+<pre>class PlayerMapper... 
+		public override void Delete (DomainObject obj) {
+			MapperFor(obj).Delete(obj);
+		}
+</pre>				
+	
+									
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

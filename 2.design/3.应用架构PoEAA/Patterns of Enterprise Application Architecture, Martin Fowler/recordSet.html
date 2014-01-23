@@ -1,0 +1,84 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Record Set</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Record Set</H1>
+<HR>
+
+<P align="center">
+<I>An in-memory representation of tabular data</I>
+</P>
+
+<P align="center">
+<img src="recordSetSketch.gif" tppabs="http://martinfowler.com/isa/recordSetSketch.gif"></P>
+
+	
+<P>In the last twenty years, the dominant way to represent data in a database is the tabular form of relational database. Backed by database companies big and small, and a fairly standard query language, almost every new development I see uses relational data.
+	</P>	
+	
+<P>On top of this came a wealth of tools to help build UI's quickly. These data aware UI frameworks rely on the fact that the underlying data is relational, and provide UI widgets of various kinds that make it easy to view and manipulate this data with hardly any programming.
+	</P>
+	
+<P>The dark side of these environments, was the fact that while they made display and simple updates ridiculously easy, they had no real facilities to place any business logic. Any validations beyond the "is this a valid date", and any business rules or computations have no good place to go. Either they get jammed into the database as stored procedures or they get mingled with UI code.
+	</P>	
+	
+<P>The idea of the <I>Record Set</I> is to have your cake and eat it, by providing an in memory structure that looks exactly like the result of a SQL query, but can be generated and manipulated by other parts of the system.
+	</P>	
+
+
+<H2>How it Works</H2>
+	
+<P>A <I>Record Set</I> is usually something that you won't build yourself. Usually it's provided by a vendor of the software platform you are working with. Examples include the Data Set of ADO.NET and the row set of JDBC 2.0. 
+	</P>
+	
+<P>The first essential element of a <I>Record Set</I> is that it looks exactly the same as the result of a database query. This way you can use the classical two-tier approach of issuing a query and throwing the data directly into a UI with all the ease that these two-tier tools give you. The second essential element is that you can easily build a <I>Record Set</I> yourself, or take a <I>Record Set</I> that is the result of a database query and easily manipulate it with domain logic code.
+	</P>
+	
+<P>Although platforms often give you <I>Record Set</I> you can create them yourself. The problem is that there isn't that much point without the data-aware UI tools, which you would also need to create yourself. However it's fair to say that the approach of building a <I>Record Set</I> structure as a list of maps, which is common in dynamically typed scripting languages, is a fair example of <I>Record Set</I>.
+	</P>
+	
+<P>The ability to disconnect the <I>Record Set</I> is very valuable. A disconnected <I>Record Set</I> is one that is separated from it's link to the data source. This allows you to pass the <I>Record Set</I>around a network without having to worry about database connections. Furthermore if you can then easily serialize the <I>Record Set</I> it can also act as a <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A> for an application.
+	</P>
+	
+<P>Disconnection raises the question of what happens when if you update the <I>Record Set</I>. Increasingly platforms are allowing the <I>Record Set</I> to be a form of <A href="unitOfWork.html" tppabs="http://martinfowler.com/isa/unitOfWork.html"><I>Unit of Work</I></A>. In this way you can take the <I>Record Set</I>, modify it, and then return it to the data source to be committed. A data source can typically use <A href="optimistic.html" tppabs="http://martinfowler.com/isa/optimistic.html"><I>Optimistic Offline Lock</I></A> to see if there's any conflicts, and if not write the changes out to the database.
+	</P>	
+
+
+<H2>When to Use it</H2>
+	
+<P>To my mind the value of <I>Record Set</I> comes from having an environment that relies on it as a common way of manipulating data. If you have a lot of UI tools that use <I>Record Set</I>, then that's a compelling reason to use them yourself. If you have such an environment, then that's a big reason to use <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> to organize your domain logic. In this style you get a <I>Record Set</I> from the database, pass it to a <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> to calculate derived information, pass it to a UI for display and editing, pass it back to a <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> for validation, and that commit updates to the database.
+	</P>
+	
+<P>In many ways the appearance of the tools that make <I>Record Set</I> so valuable occurred because of the ever-presence of relational databases and SQL. There hasn't really been an alternative common structure and query language. But now, of course, there is XML which has a widely standardized structure and a query language in XPath. Thus I think it's likely that we'll tools appear that use a hierarchic structure in the same way that tools now use <I>Record Set</I>. In this case this is perhaps really a particular case of a more generic pattern: something like <I>Generic Data Structure</I>. But I'll leave thinking about that pattern until then.
+	</P>
+	
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

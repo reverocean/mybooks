@@ -1,0 +1,246 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Gateway</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Gateway</H1>
+<HR>
+
+<P align="center">
+<I>An object that encapsulates access to an external system or resource</I>
+</P>
+
+<P align="center">
+<img src="gatewaySketch.gif" tppabs="http://martinfowler.com/isa/gatewaySketch.gif"></P>
+
+		
+<P>Interesting software rarely lives in isolation. Even the most carefully pure object-oriented system often has to deal with things that aren't objects: relation database tables, CICS transactions, XML data structures.
+	</P>
+	
+<P>When accessing external resources like this, you'll usually get an API for that resource. However these APIs are naturally going to be somewhat complicated as they take the nature of the resource into mind. Anyone who needs to understand that resource needs to understand that API: whether it be JDBC and SQL for relational databases, or the w3c or JDOM APIs for XML. Not just does this make the software harder to understand, it also makes it much harder to change should you shift some data from a relational database to an XML message at some point in the future.
+	</P>
+	
+<P>The answer is so common, that it's hardly worth stating. Wrap all the special API code into a class whose interface looks like a regular object. Other objects access the resource through this <I>Gateway</I>, and the <I>Gateway</I> object translates the simple method calls into the appropriate specialized API.
+	</P>
+
+
+<H2>How it Works</H2>
+	
+<P>In reality this is a very simple wrapper pattern. Take the external resource. Consider what the application needs to do with this resource. Create a simple API for your usage and use the <I>Gateway</I> to translate to the external source. 
+	</P>
+	
+<P>One of the key uses for a <I>Gateway</I> is to make a good point to apply a <A href="serviceStub.html" tppabs="http://martinfowler.com/isa/serviceStub.html"><I>Service Stub</I></A>. Often you'll find you may alter the design of the <I>Gateway</I> to make it easier to apply a <A href="serviceStub.html" tppabs="http://martinfowler.com/isa/serviceStub.html"><I>Service Stub</I></A>. Don't be afraid to do this - well placed <A href="serviceStub.html" tppabs="http://martinfowler.com/isa/serviceStub.html"><I>Service Stub</I></A>s can make a system much easier to test and that will make the system easier to write.
+	</P>
+	
+<P>Keep a <I>Gateway</I> as simple as you can. Focus on the essential roles of adapting the external service and providing a good point for stubbing. Keep the <I>Gateway</I> as minimal as possible yet able to handle these tasks. Any more complex logic should be in clients of the <I>Gateway</I>.
+	</P>	
+	
+<P>Often it's a good idea to use code generation to create <I>Gateway</I>s. From a definition of the structure of the external resource, you can generate a <I>Gateway</I> class to wrap it. You might use relational meta data to create a wrapper class for a relational table, or an XML schema or DTD to generate code for a <I>Gateway</I> for XML. The resulting <I>Gateway</I> are dumb but they do the trick, other objects can carry out more complicated manipulations.
+	</P>	
+	
+<P>Sometimes a good strategy is to build the <I>Gateway</I> in terms of more than one object. The obvious form is to use two objects: a back-end and a front-end. The back-end acts as a minimal overlay to the external resource and does not simplify the API of the external resource at all. The front end then transforms the awkward API into one that's more convenient for your application to use. Use this approach if the wrapping of the external service and the adaptation to your needs are both reasonably complicated. That way each responsibility is handled by a single class. Conversely if the wrapping of the external service is simple, then one class can handle that and any adaptation that's needed.
+	</P>
+
+
+<H2>When to Use it</H2>
+	
+<P>You should consider this whenever you have an awkward interface to something that feels external. Rather than let the awkwardness spread through the whole system, use a <I>Gateway</I> to contain it. There's hardly any downside to making the <I>Gateway</I>, and the code elsewhere in the system becomes much easier to read.
+	</P>
+	
+<P>Using <I>Gateway</I> usually makes a system easier to test by giving you a clear point to deploy  <A href="serviceStub.html" tppabs="http://martinfowler.com/isa/serviceStub.html"><I>Service Stub</I></A>s. So even if the external system's interface is fine, a <I>Gateway</I> is useful as a first move to make in applying <A href="serviceStub.html" tppabs="http://martinfowler.com/isa/serviceStub.html"><I>Service Stub</I></A>.
+	</P>
+	
+<P>A clear benefit of <I>Gateway</I> is that it also makes it easier for you to swap out one kind of resource for another. Any change in resource means you only have to alter the <I>Gateway</I> class and the change doesn't ripple through the rest of the system. <I>Gateway</I> is a simple and powerful form of protected variation. In many cases reasoning about this  flexibility is the focus of a discussion about whether to use <I>Gateway</I> or not. However don't forget that even if you don't think the resource is ever going to change, you can benefit simply because of the simplicity and testability that <I>Gateway</I> gives you. 
+	</P>
+	
+<P>When you have a couple of subsystems like this, then another choice to decouple them is to use a <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612">mediator</a>. However mediator is much more complicated to use than <I>Gateway</I>. As a result I find that the majority of external resource access is done using a <I>Gateway</I>.
+	</P>	
+	
+<P>I must admit that I've struggled a fair bit with whether to make this a new pattern as opposed to referencing existing patterns such as <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612">facade and adaptor</a>. I've separated from these other patterns because I think there's a useful distinction to be made.
+	</P>
+	
+<UL>
+<LI style="">While <I>facade</I> also simplifies a more complex API, a facade is usually done by the writer of the service for general use, while a <I>Gateway</I> is written by the client for their particular use. In addition a facade always implies a different interface to what it's covering, while a <I>Gateway</I> may copy the wrapped facade entirely, being use for substitution or testing purposes</LI>
+<LI style="">
+<I>Adapter</I> alters an implementation's interface to match another interface which you need to work with. With <I>Gateway</I> there usually isn't a an existing interface, although you might use an adaptor to map an implementation to a an existing <I>Gateway</I> interface. In this case the adaptor is part of the implementation of the <I>Gateway</I>.</LI>
+</UL>
+	
+	
+	
+
+
+
+<H2>Example: A gateway to a proprietary messaging service (Java)</H2>
+	
+<P>I was talking about this pattern with my colleague, Mike Rettig, and he described how he's used this pattern to handle interfaces with EAI  (Enterprise Application Integration) software. We decided that this would be a good inspiration for an example of <I>Gateway</I>.
+	</P>
+	
+<P>To keep things to the usual level of ludicrous simpleness well just build a gateway to an interface that just sends a message using the message service. The interface is just a single method.
+	</P>
+	
+<pre> 
+	int send(String messageType, Object[] args);
+</pre>
+	
+<P>The first argument is a string indicating the type of the message, the second is the arguments of the message. The messaging system allows you to send any kind of message, so it needs a generic interface like this. When you configure the message system in your use of it, you specify the types of messages the system will send, and the number and types of arguments for the message. So we might configure the confirm message with the string "CNFRM" and have arguments for an id number as a string, an  integer amount and a string for the ticker code. The messaging system will check the types of the arguments for us and generate an error if we send a wrong message or the right message with the wrong arguments.
+	</P>
+	
+<P>All this is laudable, and necessary,  flexibility but the generic interface is awkward to use because it fails to be explicit. You can't tell by looking at the interface what the legal message types are, nor what arguments are needed for a certain message type. What we need instead is an interface with methods like this.
+	</P>
+	
+<pre> 
+	public void sendConfirmation(String orderID, int amount, String symbol);
+</pre>
+	
+<P>That way if we want a domain object to send a message, it can do so like this
+	</P>
+	
+<pre>class Order... 
+	public void confirm() {
+		if (isValid()) Environment.getMessageGateway().sendConfirmation(id, amount, symbol);
+	}
+</pre>	
+	
+<P>Here the name of the method tells us what message we are sending, and the arguments are typed and given names. This is a much easier method to call than the generic method. This is the role of the gateway to make a more convenient interface. It does mean that every time we add or change a message type in the messaging system we need to change the gateway class. But we would have to change the calling code anyway, and at least this way the compiler can help us find clients and check for errors.
+	</P>
+	
+<P>There's another problem. When we get an error with this interface it tells us by giving us a return error code. A return code of 0 indicates success, anything else is an error. Different numbers indicate different errors. While this is a natural way for a C programmer to work, it isn't the way Java does things. In Java you throw an exception to indicate an error. So the gateway methods should throw exceptions rather than return error codes.
+	</P>
+	
+<P>The full range of possible errors is something that we will naturally ignore. Instead I'll focus on just two: sending a message with an unknown message type, and sending a message where one of the arguments is null. The return codes are defined in the messaging system's interface.
+	</P>
+	
+<pre> 
+	public static final int NULL_PARAMETER = -1;
+	public static final int UNKNOWN_MESSAGE_TYPE = -2;
+	public static final int SUCCESS = 0;
+</pre>
+	
+<P>The two errors have a significant difference. The unknown message type error indicates an error in the gateway class, since any client is only calling a fully explicit method, clients should never generate this error. Clients might pass in a null, however, and thus see the null parameter error. The null parameter error is not a checked exception since it indicates a programmer error - not something that you would write a specific handler for. The gateway could actually check for nulls itself, but if the messaging system is going to raise the same error it probably isn't worth it.
+	</P>
+	
+<P>As a result the gateway has to do both the translation from the explicit interface to the generic interface, and translate the return codes into exceptions.
+	</P>
+	
+<pre>class MessageGateway... 
+	protected static final String CONFIRM = "CNFRM";
+	private MessageSender sender;
+
+	public void sendConfirmation(String orderID, int amount, String symbol) {
+		Object[] args = new Object[]{orderID, new Integer(amount), symbol};
+		send(CONFIRM, args);
+	}
+
+	private void send(String msg, Object[] args) {
+		int returnCode = doSend(msg, args);
+		if (returnCode == MessageSender.NULL_PARAMETER)
+			throw new NullPointerException("Null Parameter bassed for msg type: " + msg);
+		if (returnCode != MessageSender.SUCCESS)
+			throw new IllegalStateException(
+					"Unexpected error from messaging system #:" + returnCode);
+	}
+
+	protected int doSend(String msg, Object[] args) {
+		Assert.notNull(sender);
+		return sender.send(msg, args);
+	}
+</pre>
+	
+<P>So far, it's hard to see the point of the <code>doSend </code> method. It's there for another key role for a gateway - testing. We can test objects that use the gateway without the message sending service being present. To do this we need to create a  message gateway stub. In this case the gateway stub is a subclass of the real gateway and overrides <code>doSend </code>.
+	</P>
+	
+<pre>class MessageGatewayStub... 
+	protected int doSend(String messageType, Object[] args) {
+		int returnCode = isMessageValid(messageType, args);
+		if (returnCode == MessageSender.SUCCESS) {
+			messagesSent++;
+		}
+		return returnCode;
+	}
+
+	private int isMessageValid(String messageType, Object[] args) {
+		if (shouldFailAllMessages) return -999;
+		if (!legalMessageTypes().contains(messageType))
+			return MessageSender.UNKNOWN_MESSAGE_TYPE;
+		for (int i = 0; i &lt; args.length; i++) {
+			Object arg = args[i];
+			if (arg == null) {
+				return MessageSender.NULL_PARAMETER;
+			}
+		}
+		return MessageSender.SUCCESS;
+	}
+
+	public static List legalMessageTypes() {
+		List result = new ArrayList();
+		result.add(CONFIRM);
+		return result;
+	}
+
+	private boolean shouldFailAllMessages = false;
+
+	public void failAllMessages() {
+		shouldFailAllMessages = true;
+	}
+
+	public int getNumberOfMessagesSent() {
+		return messagesSent;
+	}
+</pre>
+	
+<P>Capturing the number of messages sent is a simple way of helping us test that the gateway works correctly with tests like these.
+	</P>
+	
+<pre>class GatewayTester... 
+	public void testSendNullArg() {
+		try {
+			gate().sendConfirmation(null, 5, "US");
+			fail("Didn't detect null argument");
+		} catch (NullPointerException expected) {
+		}
+		assertEquals(0, gate().getNumberOfMessagesSent());
+	}
+
+	private MessageGatewayStub gate() {
+		return (MessageGatewayStub) Environment.getMessageGateway();
+	}
+
+	protected void setUp() throws Exception {
+		Environment.testInit();
+	}
+</pre>
+	
+<P>You usually set up the gateway so classes can find it from a well known place. Here I've used a static environment interface. Testing code initializes it to use the gateway stub while in regular use you use the real gateway. 
+	</P>
+	
+<P>In this case I've used a subclass of the gateway to stub the messaging service. Another route is to subclass (or reimplement) the service itself. For testing you'd then connect the gateway to the sending service stub. This works if  reimplementation of the service is not too difficult. You always have the choice of stubbing the service or stubbing the gateway. In some cases it's even useful to stub both of them, using the stubbed gateway for testing clients of the gateway and the stubbed service to test the gateway itself.
+	</P>
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

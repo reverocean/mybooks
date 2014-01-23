@@ -1,0 +1,226 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Introduction</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/" ><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/" >Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html" >Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html" >Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html" >Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo" >Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/" >ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Introduction</H1>
+<HR>
+
+<P>In case you haven't realized it, building computer systems is hard. As the complexity of the system gets greater the task of building the software gets exponentially harder. Like any profession we can only progress by learning, both from our mistakes and our successes. This book represents some of this learning written in a form that I hope will help you to learn these lessons quicker than I did, or communicate to others more effectively than I did before I boiled these patterns down.
+</P>
+
+<P>For this introduction I want to set the scope of the book, and provide some of the background that'll underpin the ideas in the book. 
+</P>
+
+<a name="ND"></a>
+
+<H2>Architecture</H2>
+	
+<P>The software industry has a delight in taking words and stretching them into a myriad of subtly contradictory meanings. One of the biggest sufferers is "architecture". I tend to look at architecture as one of those impressive sounding words, used primarily to indicate that we are talking about is something that's important. But I'm pragmatic enough to not let my cynicism get in the way of attracting people to my book :-)
+	</P>
+	
+<P>In this book I want to concentrate of the major parts of an enterprise application and how these parts fit together. Some of these patterns can reasonably be called architectural patterns, in that they represent significant decisions about these parts, others are more design patterns that help you to realize that architecture.
+	</P>
+	
+<P>The dominant architectural pattern is that of layers, which I describe more in chapter 2. So this book is about how you decompose an enterprise application into layers and how these layers work together. Most non-trivial enterprise applications use a layered architecture of some form, but there are some situations where other approaches, such as pipes and filters are valuable. I don't go into those situations, focusing instead on the context of a layered architecture because its the most widely useful.
+	</P>	
+
+
+<a name="N1C"></a>
+
+<H2>Enterprise Applications</H2>
+	
+<P>Lots of people write computer software, and we all call it all software development. Yet there are distinct kinds of software out there, each of which has its own challenges and complexities. This comes out when I talk with some of my friends in the telecoms field. In some ways enterprise applications are much easier than telecoms software - we don't have very hard multi-threading problems, we don't have hardware and software integration. But in other ways its much tougher. Enterprise applications often have large and complex data to work on, together with business rules that fail all tests of logical reasoning. Although some techniques and patterns are relevant for all kinds of software, many are relevant for only one particular branch.
+	</P>
+	
+<P>In my career I've concentrated on enterprise applications, so my patterns here are all about that. But what do I mean by the term "enterprise application"? I can't give a precise definition for them, but I can give some indications.
+	</P>
+	
+<P>I'll start by example. Things that are enterprise applications include: payroll, patient records, shipping tracking, cost analysis, credit scoring, insurance, accounting, foreign-exchange trading. Things that are not enterprise applications include: automobile fuel injection, word processors, elevator controllers, chemical plant controllers, telephone switches, operating systems, compilers, games.
+	</P>
+	
+<P>Enterprise applications usually involve <B>persistent data</B>. The data is persistent because it needs to be around between multiple runs of the program - indeed it usually needs to persist for several years. During this time there will be many changes in the programs that use it. It will often outlast the hardware that originally created much of the data, and outlast operating systems and compilers. During that time there'll be many changes to the structure of the data in order to store new pieces of information without disturbing the old. Even if there is a fundamental change and the company installs a completely new application to handle a job, the data has to be migrated to the new application. 
+	</P>
+	
+<P>There's usually <B>a lot of data</B>, a moderate system will have over 1GB of data organized in tens of millions of records, so much data that managing it is a major part of the system. Older systems used indexed file structure such as IBM's VSAM and ISAM. Modern systems usually use databases, mostly relational databases. The design and feeding of these databases has turned into a sub-profession of its own.
+	</P>
+	
+<P>Usually many people <B>access data concurrently</B>. For many systems this may be less than a hundred people, but for web based systems that talk over the Internet, this goes up by orders of magnitude. With so many people there are definite issues in ensuring that they can access the system properly. But even without that many people there are still problems in making sure that two people don't access the same data at the same time in such a way that would cause errors. Transaction manager tools handle some of the burden of this, but often it's impossible to hide this from application developers.
+	</P>
+	
+<P>With so much data, there's usually <B>a lot of user interface screens</B> to handle this data. It's not unusual to have hundreds of distinct screens. Users of enterprise applications vary from habitual to regular users. Usually they will have little technical expertise. The data has to be presented lots of different ways for different purposes.
+	</P>
+	
+<P>Enterprise applications rarely live in an island. Usually they need to <B>integrate with other enterprise applications</B> scattered around the enterprise. The various systems are usually built at different times with different technologies. Even the collaboration mechanisms will be different: COBOL data files, CORBA, messaging systems. Every so often the enterprise will try to integrate its different systems using a common communication technology. Of course it hardly ever finishes the job, so there are several different unified integration schemes in place at once.
+	</P>
+	
+<P>Even if a company unifies the technology for integration, they run into problems with differences in business process and <B>conceptual dissonance</B> with the data. One division of the company may think a customer is someone who has a current agreement with the company, another department also counts those that had a contract but don't any longer, another one counts product sales but not service sales. That may sound like it's easy to sort out but when have hundreds of records where every field can have subtly different meanings, the sheer size of the problem becomes a challenge - even if the only person who knows what this field really means is still with the company. (And of course all of this changes without warning.) As a result data has to be constantly read, munged, and written in all sorts of different syntactic and semantic formats.
+	</P>
+	
+<P>Then there is the matter of what goes on under the term "business logic". I find this a curious term because there are few things more less logical than business logic. When you build an operating system you strive to keep the whole thing logical. But business rules are just given to you and without major political effort there's nothing you can do to change them. The rules are haphazard often with no seeming logic. Of course they got that way for a reason: some salesman negotiated to have a certain yearly payment two days later than usual because that fitted with his customer's accounting cycle and thus won half a million dollars of business. A few thousand of these one off special cases is what leads to the <B>complex business illogic</B> that makes business software so difficult.
+	</P>	
+	
+<P>For some people the term "Enterprise Application" implies a large system. But it's important to remember that not all enterprise applications are large, even though they can provide a lot of value to the enterprise. Many people assume that since small systems aren't large, they aren't worth bothering with. To some degree there's merit here, if a small system fails it usually makes less of a noise than a big system. However I think such thinking tends to short-change the cumulative effect of many small projects. If you can do things that improve small projects, then that cumulative effect can be very significant on an enterprise, particularly since small projects often have disproportionate value. Indeed one of the best things you can do is turn a large project into a small project by simplifying its architecture and process.
+	</P>
+	
+
+
+<a name="N58"></a>
+
+<H2>Kinds of enterprise application</H2>
+	
+<P>When we discuss how to design enterprise applications, and what patterns to use, it's important to realize that enterprise applications are different, and that different problems lead to different ways of doing things. I have a set of alarm bells that go off when people say "always do this". For me, much of the challenge (and interest) in design is in knowing about alternatives and judging the trade offs of when to use one alternative over another. There is a large space of alternatives to choose from, but here I'll pick three points on this very big plane.
+	</P>
+	
+<P>Consider a B2C (business to customer)  online retailer: people  browse and, with luck and shopping cart, buy. For such a system we need to be able handle a very high volume of users, so our solution needs to be both reasonably efficient in terms of resources used, but also scalable so that you can increase the load you can handle by adding more hardware. The domain logic for such an application is pretty straightforward: capturing orders, some relatively simple pricing and shipping calculations, and notification of shipments. We want anyone to be able access the system easily, so that implies a pretty generic web presentation which can be used with the widest possible range of browsers. Data source includes a database for holding orders and perhaps some communication with an inventory system to help with availability and delivery information.
+	</P>
+	
+<P>Contrast this with a system for automating the processing of leasing agreements. In some ways this is a much simpler system than the retailer because there are much fewer users, no more than a hundred or so at any one time. Where it's more complicated is in the business logic. Calculating monthly bills on a lease, handling events such as early returns and late payments., validating data as a lease is booked - all of these are complicated tasks since much of the leasing industry competition comes in the form of yet more little variations over deals done in the past. A complex business domain such as this is challenging because the rules are so arbitrary. If you design an operating system or a telephone switch at least are trying to develop the processing in a logical way. Business rules often defy all logic, and are subject to regular changes over time. 
+	</P>
+	
+<P>Such a system also has more complexity in the UI. At the least this means a much more involved HTML interface with more screens and more complex screens. Often these kinds of systems have UI demands which lead users to want a more sophisticated presentation than a HTML front end allows - so a more conventional rich client interface is needed. The more complex user interaction also leads to more complicated transaction behavior: booking a lease may take an hour or two during which the user is in a logical transaction.	We also see a complex database schema with a couple of hundred tables, and connections to packages for asset valuation and pricing.
+	</P>
+	
+<P>A third example point would be a simple expense tracking system for a small company. Such a system has few users and  simple logic. It can easily be made accessible across the company with an HTML presentation. The only data source is a few tables in a database.	Yet even a simple system like this is not devoid of a challenge. You have to build it very quickly. You also have to bear in mind that it may grow later as people want to calculate the reimbursement checks, feed them into the payroll system, understand tax implications, provide reports for the CFO, tie into airline reservation web services, and so on. Trying to use the architecture for either of the other two systems will slow down the development of this system, and add complexity that will probably harm its future evolution. And although this system may be small, most enterprises have a lot of such systems, so the cumulative effect of an over-complex architecture can be significant.
+	</P>	
+
+
+<a name="N6D"></a>
+
+<H2>Performance</H2>
+	
+<P>It's always difficult to talk about performance in a book such as this. The reason why it's so difficult is that any advice about performance should not be treated as fact until it is measured on your configuration. Too often I've seen designs used or rejected due to performance considerations, which turned out to be bogus once somebody actually did some measurements on the setup actually used for the application. 
+	</P>
+	
+<P>I've given a few guidelines in this book, including minimizing remote calls which has been good performance advice for quite a while. Even so you should verify every tip by measuring on your application. Similarly there are several occasions where code examples in this book sacrifice performance for understandability. Again it's up to you to apply the optimizations for your environment. But whenever you do a performance optimization you must measure both before and after, otherwise you may just be making your code harder to read. 
+	</P>
+	
+<P>There's an important corollary to this: any significant change in configuration may invalidate any facts about performance. So if you upgrade to a new version of your virtual machine, hardware, database, or almost anything else - redo your performance optimizations and make sure they are still helping. In many cases a new configuration can change things. Indeed you may find that an optimization you did in the past to improve performance actually hurts performance in the new environment.
+	</P>
+	
+<P>Another problems with talking about performance is the fact that many terms are used in an inconsistent way. The most noted victim of this is "scalability", which regularly gets used to mean half a dozen different things. To my, rather cynical eye, most comments about things that affect scalability are vague threats about ill-defined future fears about performance - and of course since they are future threats it's rather hard to verify them with measurements. As a result here's the terms I use.
+	</P>
+	
+<P>
+<B>Response time</B> is the amount of time it takes for the system to process a request from the outside. This may be a UI action, such as pressing a button, or a server API call. 
+	</P>
+	
+<P>
+<B>Responsiveness</B> is about how quickly the system acknowledges the request, as opposed to processing it. This is important an many systems because a people may get frustrated if a system has low responsiveness, even if it's response time is good. If your system waits during the whole request, then your responsiveness and response time are the same. However if you indicate you've received the request before you complete, then your responsiveness is better. Providing a progress bar during a file copy improves the responsiveness of your user interface, even though it doesn't improve the response time.
+	</P>
+	
+<P>
+<B>Latency</B> is the minimum time required to get a any form of response, even if the work to be done is non existent. Latency is usually the big issue in remote systems. If I ask a program to do nothing, but tell me when it's done doing nothing, then if the program runs on my laptop I should get an almost instantaneous response. However if the program runs on a remote computer I may get a few seconds just because of the time taken for the request and response to make their way across the wire. As an application developer, there's usually nothing I can do to improve latency. Latency is also the reason why you should minimize remote calls.
+	</P>
+	
+<P>
+<B>Throughput</B> is how much stuff you can do in a given amount of time. If you're measuring copying a file, throughput might be measured in bytes per second. For enterprise applications a typical measure is transactions per second,  but the problem with this is that it depends on the complexity of your transaction. For your particular system you should pick a common set of transactions.
+	</P>
+	
+<P>The <B>load</B>  of a system is a statement of how much stress a system is under. This might be measured in how many users are currently connected to the system. The load is usually a context for some other measurement, such as a response time. So you may say that the response time for some request is 0.5 seconds with 10 users and 2 seconds with 20 users. The <B>load sensitivity</B> is an expression of how the response time varies with the load. A system that has a response time of 0.5 seconds for 10 through 20 users has a lower load sensitivity than a system with a response time of 0.2 seconds for 10 users that rises to 2 seconds for 20 users. The <B>capacity</B> of a system is an indication of a maximum effective throughput or load. This might be an absolute maximum, or a point at which the response time dips below an acceptable threshold.
+	</P>
+	
+<P>
+<B>Scalability</B> is a measure of how adding hardware effects the performance. A scalable system is one that allows you to add hardware and get a commensurate performance improvement, such as doubling your server capacity doubling your throughput..
+	</P>
+	
+<P>The problem is that design decisions don't affect all these performance factors equally. Say we have two software systems running on a server: swordfish has a capacity of  20 tps, while camel's capacity is 40tps. Which has better performance, which is more scalable? We can't answer the scalability question from this data, and we can only say that camel has a higher capacity on a single server. Now if we add another server we notice that swordfish now handles 35tps and camel handles 50tps. Camel's capacity is still better, but swordfish looks like it may scale better. Let's say we continue adding servers and discover that Swordfish gets 15tps per extra server and Camel gets 10tps per extra server. Given this data we can say swordfish is more scalable, even though Camel has better capacity for less than five servers.
+	</P>
+	
+<P>When building enterprise systems, it often makes sense to build for hardware scalability rather than capacity or even load sensitivity. Scalability gives you the option of better performance if you need it. Scalability is also often easier to do. Often designers do complicated things that improve the capacity on a particular hardware platform, when it might actually be cheaper to buy more hardware. If Camel has a greater cost than Swordfish, and that greater cost is equivalent to a couple of servers, then Swordfish ends up being cheaper even if you only need 40 tps.	It's fashionable to complain about relying on better hardware to make our software run properly, and I join this choir whenever I have to upgrade my laptop just to handle the latest version of Word. But newer hardware is often cheaper than the price of making software run on less powerful systems. Similarly adding more servers if often a cheaper price then adding more programmers - providing a system is scalable.  
+	</P>
+
+
+
+<a name="NAA"></a>
+
+<H2>Patterns</H2>
+	
+<P>Patterns have been around for a long time, so part of me does not want to regurgitate the history of them yet another time. But this is an opportunity for me to provide my view of patterns and what it is that makes patterns a worthwhile way to approach describing design.
+	</P>
+	
+<P>There's no generally accepted definition of a pattern but perhaps the best place to start is Christopher Alexander, and inspiration for many pattern enthusiasts: "Each pattern describes a problem which occurs over and over again in our environment, and then describes the core of the solution to that problem, in such a way that you can use this solution a million times over, without ever doing it the same way twice" <a href="http://www.amazon.com/exec/obidos/ASIN/0195019199" >[Alexander et al, pattern language]</a>. Alexander is an architect so he was talking about buildings, but the definition works pretty nicely for software as well. The focus of the pattern is a particular solution, one that is both common and effective at dealing with one or more recurring problems. Another way of looking at it is that it is a chunk of advice, and the art of creating patterns is to divide up many pieces of advice into relatively independent chunks, so that you can refer to them and discuss them more or less separately.
+	</P>
+	
+<P>A key part of patterns is that they are rooted in practice. You find patterns by looking at what people do, observing things that work, and then looking for the "core of the solution". It isn't an easy process, but once you've found some good patterns they become a valuable thing. For me their value lies in being able to create a book that is a reference book. You don't need to read all of this book, or of any patterns book, to find it useful. You need to read enough of the book to have a sense of what the patterns are, the problems they solve, and some sense of how they do it. But you don't need to know all the details. You just need enough so that if you run into one of the problems, you can find the pattern in the book. Only then do you need to really understand the pattern and its solution.
+	</P>	
+	
+<P>Once you need the pattern, you then have to figure out how to apply to your circumstances. A key thing about patterns is that you can never just apply the solution blindly, which is why patterns tools have been such miserable failures. A phrase I like to use is that patterns are "half baked" - meaning that you always have to finish them off in the oven of your own project. Every time I use a pattern I tweak it a little here and a little there. So you see the same solution many times over, but it's never exactly the same.
+	</P>
+	
+<P>Each pattern is relatively independent, but they are not isolated from each other. So often one pattern leads to another or one pattern usually only occurs if another is around. So you'll usually only see <A href="classTableInheritance.html" tppabs="http://martinfowler.com/isa/classTableInheritance.html"><I>Class Table Inheritance</I></A> if there's a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> in your design. The boundaries between the patterns are naturally very fuzzy, but I've tried to make each pattern as self-standing as I can. So if someone says "use a <A href="unitOfWork.html" tppabs="http://martinfowler.com/isa/unitOfWork.html"><I>Unit of Work</I></A> you can look it up and see how to apply without having to read the entire book.
+	</P>
+	
+<P>If you're an experienced designer of enterprise applications, you'll probably find most of these patterns are familiar to you. I hope you won't be too disappointed (I did try to warn you in the preface). Patterns aren't original ideas, they are very much observations of what happens in the field. As a result patterns authors don't say they "invented" a pattern, rather we say we "discovered" a pattern. Our role is simply to note the common solution, look for its core, and then write down the resulting pattern. For an experienced designer, the value of the pattern is not that it gives you a new idea, the value lies in helping you communicate your idea. If you and your colleagues all know what a <A href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html"><I>Remote Facade</I></A> is, you can communicate a lot by saying "this class is a <A href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html"><I>Remote Facade</I></A>". It also allows you to say to someone newer, "use a <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A> for this" and they can come to this book to look it up. As a result patterns create a vocabulary to talk about design, which is why naming is such an important issue.
+	</P>
+	
+	
+<a name="ND6"></a>
+	
+<H3>The Structure of the Patterns</H3>
+			
+<P>Every author has to choose his pattern form. Some base their forms on the classic patterns book such as <a href="http://www.amazon.com/exec/obidos/ASIN/0195019199" >[Alexander et al, pattern language]</a>, <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612" >[Gang of Four]</a>, or <a href="http://www.amazon.com/exec/obidos/ASIN/0471958697" >[POSA]</a>. Others make up their own. I long wrestled with what makes the best form. On the one hand I don't want something as bitty as the GOF form, on the other I do need to have sections that support a reference book. So this is what I've used for this book.
+			</P>
+			
+<P>The first item is the name of the pattern. Pattern names are crucially important, because part of the purpose of patterns is to create a vocabulary that allows designers to communicate more effectively. So if I tell you my web server is built around a <A href="frontController.html" tppabs="http://martinfowler.com/isa/frontController.html"><I>Front Controller</I></A> and a <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A> and you know these patterns, you have a very clear idea of the architecture of my web server.
+			</P>
+			
+<P>Next are two items that go together: the intent and the sketch. The intent sums up the pattern in a sentence or two. The sketch is a visual representation of the pattern, often but not always a UML diagram. The idea behind these is to be a brief reminder of what the pattern is about, so you can quickly recall it. If you already "have the pattern", meaning you know the solution even if you don't know the name, then the intent and sketch should be all you need to know what the pattern is. 
+			</P>
+			
+<P>The next section describes a motivating problem for the pattern. This may not be the only problem that the pattern solves, but it's one that I think best motivates the pattern.
+			</P>
+			
+<P>
+<I>How it Works</I> describes the solution. In here I put a discussion of how it works, variations that I've come across, and various implementation issues that come up. The discussion is as independent as possible of any particular platform, where there are platform specific sections I've indented them off so you can see them and easily skip over them. Where useful, I've put in UML diagrams to help explain them.
+			</P>
+			
+<P>
+<I>When to Use It</I> describes when the pattern should be used. Here I talk about the trade offs that make you select this solution compared to others. Many of the patterns in this book are alternatives: such <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A> and <A href="frontController.html" tppabs="http://martinfowler.com/isa/frontController.html"><I>Front Controller</I></A>. Few patterns are always the right choice, so whenever I find a pattern I always ask myself "when would I not do this?" That question often leads me to alternative patterns. 
+			</P>
+			
+<P>I like to add one or more <I>examples</I>. Each example is a <I>simple</I> example of the pattern in use, illustrated with some code in Java or C#. I chose those languages because these seem to be languages that largest amount of professional programmers can read. It's absolutely essential to understand that the example is not the pattern. When you use the pattern it won't look exactly like this example - so don't treat it as some kind of glorified macro. I've deliberately kept the example as simple as possible, so you can see the pattern in as clear a form as I can imagine. There are all sorts of issues that are ignored that will become important when you use it, but these will be particular to your own environment, which is why you always have to tweak the pattern.
+			</P>
+			
+<P>One of the consequences of this is that I've worked hard to keep each example as simple as I can, while still illustrating the core message of the pattern. As such I've often chosen an example that's simple and explicit, rather than one that demonstrates how a pattern works with many of the many wrinkles required in a production system. It's a tricky balance between simple and simplistic, but it's also true that too many realistic yet peripheral issues can make it harder to understand the key points of a pattern.
+			</P>
+			
+<P>This is also why I've gone for simple independent examples, instead of a connected running examples. Independent examples are easier to understand in isolation, but give less guidance on how you put them together. A connected example shows how things fit together, but it's hard to understand any one pattern without understanding all the others involved in the example. While in theory it's possible to produce examples that are both connected yet understandable independently, doing so is very hard. Or at least too hard for me, so I chose the independent route.
+			</P>
+			
+			
+<P>The <I>Further Reading</I> section points you to other discussions of this pattern. This is not a comprehensive bibliography on the pattern, I've limited my references to pieces that I think are important in helping you understand the pattern. So I've eliminated discussion that I don't think add much to what I've written, and of course eliminated discussions of those patterns I haven't read. I also haven't mentioned items that I think are going to be hard to find, or unstable web links that I fear may disappear by the time you read this book.
+			</P>
+			
+<P>Not all the sections appear in all of the patterns. If I couldn't think of a good example or motivation text, I left it out.
+			</P>
+					
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/" ><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/" ><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/" >Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

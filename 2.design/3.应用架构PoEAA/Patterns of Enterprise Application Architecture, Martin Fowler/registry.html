@@ -1,0 +1,236 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Registry</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Registry</H1>
+<HR>
+
+<P align="center">
+<I>A well known object that other objects can use to find common objects and services</I>
+</P>
+
+<P align="center">
+<img src="registrySketch.gif" tppabs="http://martinfowler.com/isa/registrySketch.gif"></P>
+
+	
+<P>Most of the movement between objects is done by following references in fields. If you want to find all the orders for a customer, you'll most often start with the customer object and use a method on the customer to get the orders. However in some cases you won't have an appropriate object to start with. You may know the customer's id number, but not have a reference to the customer. In this case you need to you use some kind of lookup method - a finder. But the question just continues to ask itself - how do you get to the finder?
+	</P>	
+	
+<P>A <A href="registry.html" tppabs="http://martinfowler.com/isa/registry.html"><I>Registry</I></A> is essentially some kind of global object, or at least it looks like a global object - even if it isn't as global as it may appear.
+	</P>	
+
+
+<H2>How it Works</H2>
+	
+<P>As with any object, you have to think about the design of a <I>Registry</I> in terms of interface and implementation. And like many objects the two are quite different while people often make the mistake of thinking they should be the same.
+	</P>
+	
+<P>The first thing to think of is the interface, and for <I>Registry</I>s my preferred interface is static methods. A static method on a class is easy to find anywhere in an application. Furthermore you can encapsulate any logic you like within the static method, including delegation to other methods which can either be static or instance methods.
+	</P>
+	
+<P>However just because your methods are static does not mean your data should be in static fields. Indeed I almost never use static fields unless they are constants.
+	</P>
+	
+<P>Before you decide on how to hold your data, you have to think about the scope of the data. The data for a <I>Registry</I> can vary with different execution contexts. Some data is global across an entire process, some global across a thread, some global across a session. Different scopes call for different implementations, however different scopes don't call for different interfaces. The application programmer need not know whether a call to a static method yields process scoped or thread scoped data. You can have different <I>Registry</I>s for different scopes, but you can also have a single <I>Registry</I> where different methods are at different scopes.
+	</P>
+	
+<P>If your data is common to a whole process, then a static field is an option. However I rarely use static mutable data because they don't allow for substitution. It is often extremely useful to be able to substitute a <I>Registry</I> for a particular purpose, especially for testing (<A href="plugins.html" tppabs="http://martinfowler.com/isa/plugins.html"><I>Plugin</I></A> is a good way to do this.) 
+	</P> 
+	
+<P>So for process scoped <I>Registry</I> the usual option is a  singleton<a href="http://www.amazon.com/exec/obidos/ASIN/0201633612">[Gang of Four]</a>. The <I>Registry</I> class contains a single static field that holds an instance of the <I>Registry</I>. Often when people use a singleton they make the caller of the singleton explicitly access the underlying data (<code>Registry.soleInstance.getFoo()</code>), but I prefer to have a static method that hides the singleton object from me (<code>Registry.getFoo()</code>). This works particularly well since C based languages allow static methods to access private instance data.
+	</P>
+	
+<P>Singletons are quite widely used in single-threaded applications, but can be quite a problem for multi-threaded applications. This is because it's too easy to have multiple threads manipulating the same object in unpredictable ways. You may be able to solve this with synchronization, but the difficulty of writing the synchronization code is likely to drive you into an insane asylum before you get all the bugs out. So I don't recommend using a singleton for mutable data in a multi-threaded environment. A singleton does work well for immutable data, anything that can't change isn't going to run into thread clash problems. So something like a list of all states in the US makes a good candidate for a process scoped <I>Registry</I>. Such data can be loaded when a process starts up and then never needs changing, or may be updated rarely with some kind of process interrupt.
+	</P>
+	
+<P>A common kind of <I>Registry</I> data is thread scoped data. A good example of this might be a database connection. In this case many environments give you some form of thread specific storage that you can use, such as Java's thread local. Another technique is to have a dictionary keyed by thread whose value is an appropriate data object. A request for a connection would then result in a lookup in that dictionary by the current thread.
+	</P>
+	
+<P>The important thing to remember about using thread-scoped data is that it looks no different from using process-scoped data. I can still use a method such as <code>Registry.getDbConnection()</code>, which is just the same form as if I'm accessing process-scoped data.
+	</P>
+	
+<P>A dictionary lookup is also a technique that you can use for session-scoped data. Here you need a session id, but this could be put into a thread scoped registry when a request begins. Any subsequent accesses for session data can then look the data up in a map that's keyed by session using the session id that's held in thread specific storage.
+	</P>
+	
+<P>Some applications may have a single <I>Registry</I>, some may have several. <I>Registry</I>s are usually divided up by system layer, or by execution context. My preference is to divide them up by how they are used, rather than how they are implemented.
+	</P>
+
+
+<H2>When to Use it</H2>
+	
+<P>Despite the encapsulation of a method a <I>Registry</I> is still global data, and as such is something I'm uncomfortable using. I find I almost always see some form of <I>Registry</I> in an application, but I always try to access objects through regular inter-object references rather than resorting to the <I>Registry</I>. So you should always use a <I>Registry</I> as a means of last resort.
+	</P>
+	
+<P>There are alternatives to using a <I>Registry</I> at all. One alternative is to pass around any widely needed data in parameters. The problem with this is that it leads to parameters that are added to method calls where they aren't needed by the called method, only needed for some other method that's called several layers deep in the call tree. Passing a parameter round when it's not needed 90% of the time is the trigger that leads me to use a <I>Registry</I> instead.
+	</P>
+	
+<P>Another alternative I've seen to a <I>Registry</I> is to add a reference to the common data to objects when they are created. Although this leads to an extra parameter in a constructor, at least it's only used by the constructor. It's still more trouble than it's often worth, but if you have data that's only used by a subset of classes, this technique does allow you to restrict things that way.
+	</P>
+	
+<P>One of the problems with a <I>Registry</I> is that every time you add a new piece of data you have to modify the <I>Registry</I>. This leads to some people preferring to use a map as their holder of global data. I prefer the explicit class because it keeps the methods explicit - so there's no confusion about what key you use to find something. With an explicit class you can just look at the source code or generated documentation to see what's available, with a map you have to find places in the system where data is read or written to the map to find out what key is used - or rely on documentation which quickly becomes stale. An explicit class also allows you to keep type safety in a statically typed language as well as to encapsulate the structure of the <I>Registry</I>, which allows you to refactor it as the system grows. A bare map also is unencapsulated, which makes it harder to hide the implementation, which is particularly awkward if you have to change the execution scope of the data.
+	</P>
+	
+<P>So there are times when it's right to use a <I>Registry</I> - but remember that any global data is always guilty until proven innocent.
+	</P>
+	
+
+
+
+<H2>Example: A Singleton Registry (Java)</H2>
+	
+<P>Consider an application that reads data from a database and then munges on the data to turn it into information. Well imagine a fairly simple system that uses  <A href="rowDataGateway.html" tppabs="http://martinfowler.com/isa/rowDataGateway.html"><I>Row Data Gateway</I></A>s to access the data. With such a system it's useful to have finder objects to encapsulate the database queries. These finders are best made as instances because that way we can substitute them to make a <A href="serviceStub.html" tppabs="http://martinfowler.com/isa/serviceStub.html"><I>Service Stub</I></A> for testing purposes. To get hold of the finders, we'll need a place to put them: a <I>Registry</I> is the obvious choice. 
+	</P>
+	
+<P>A singleton registry is a very simple example of the singleton pattern <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612">[Gang of Four]</a>. You have a static variable for the single instance.
+	</P>
+	
+<pre>class Registry... 
+	private static Registry getInstance() {
+		return soleInstance;
+	}
+	private static Registry soleInstance = new Registry();
+</pre>	
+	
+<P>Everything that's stored on the registry is stored on the instance. 
+	</P>
+	
+<pre>class Registry... 
+	protected PersonFinder personFinder = new PersonFinder();
+
+</pre>	
+	
+<P>To make access easier, however, I make the public methods static.
+	</P>
+	
+<pre>class Registry... 
+	public static PersonFinder personFinder() {
+		return getInstance().personFinder;
+	}
+</pre>	
+	
+<P>I can re-initialize the registry by simply creating a new sole instance.
+	</P>
+	
+<pre>class Registry... 
+	public static void initialize() {
+		soleInstance = new Registry();
+	}
+</pre>	
+	
+<P>If I want to use <A href="serviceStub.html" tppabs="http://martinfowler.com/isa/serviceStub.html"><I>Service Stub</I></A>s for testing, I use a subclass instead.
+	</P>
+	
+<pre>class RegistryStub extends Registry... 
+	public RegistryStub() {
+		personFinder = new PersonFinderStub();
+	}
+</pre>	
+	
+<P>The finder <A href="serviceStub.html" tppabs="http://martinfowler.com/isa/serviceStub.html"><I>Service Stub</I></A> just returns hard coded instances of the person <A href="rowDataGateway.html" tppabs="http://martinfowler.com/isa/rowDataGateway.html"><I>Row Data Gateway</I></A>
+	
+</P>
+	
+<pre>class PersonFinderStub... 
+	public Person find(long id) {
+		if (id == 1) {
+			return new Person("Fowler", "Martin", 10);
+		}
+		throw new IllegalArgumentException("Can't find id: " + String.valueOf(id));
+	}
+</pre>	
+	
+<P>I put a method on the registry to initialize it in stub mode, but by keeping all the stub behavior in the subclass I can separate all the code required for testing.
+	</P>
+	
+<pre>class Registry... 
+	public static void initializeStub() {
+		soleInstance = new RegistryStub();
+	}
+</pre>	
+
+
+	
+<H2>Example: Thread Safe <I>Registry</I> (Java)</H2>
+	
+<P>
+<I>Matt Foemmel and Martin Fowler</I>
+</P>
+	
+<P>The simple example above won't work for a multi-threaded application where different threads need their own registry. Java provides Thread Specific Storage <a href="http://www.amazon.com/exec/obidos/ASIN/0471606952">[Schmidt]</a> - variables that are local to a thread, helpfully called thread local variables. You can use these to create a registry that's unique for a thread.
+	</P>
+	
+<pre>class ThreadLocalRegistry... 
+	private static ThreadLocal instances = new ThreadLocal();
+	public static ThreadLocalRegistry getInstance() {
+		return (ThreadLocalRegistry) instances.get();
+	}
+</pre>	
+	
+<P>The <I>Registry</I> needs to be set up with methods to acquire and release the registry. You would typically do this on a transaction or session call boundary.
+	</P>
+	
+<pre>class ThreadLocalRegistry... 
+	public static void begin() {
+		Assert.isTrue(instances.get() == null);
+		instances.set(new ThreadLocalRegistry());
+	}
+	public static void end() {
+		Assert.notNull(getInstance());
+		instances.set(null);
+	}
+</pre>	
+	
+<P>We can then store person finders just as before.
+	</P>
+	
+<pre>class ThreadLocalRegistry... 
+	private PersonFinder personFinder = new PersonFinder();;
+	public static PersonFinder personFinder() {
+		return getInstance().personFinder;
+	}
+</pre>	
+	
+<P>Calls from the outside then wrap their use of a registry in the begin and end methods.
+	</P>
+	
+<pre> 
+		try {
+			ThreadLocalRegistry.begin();
+			PersonFinder f1 = ThreadLocalRegistry.personFinder();
+			Person martin = Registry.personFinder().find(1);
+			assertEquals("Fowler", martin.getLastName());
+		} finally {ThreadLocalRegistry.end();
+		}
+</pre>	
+	
+
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

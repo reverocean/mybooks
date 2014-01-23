@@ -1,0 +1,145 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ISA: Embedded Value</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/"><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/">Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html">Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html">Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html">Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo">Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/">ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Embedded Value</H1>
+<HR>
+
+<P align="center">
+<I>Map an object into several fields of another object's table</I>
+</P>
+
+<P align="center">
+<img src="aggregateMappingSketch.gif" tppabs="http://martinfowler.com/isa/aggregateMappingSketch.gif"></P>
+
+	
+<P>There are many small objects that make sense in an OO system, that don't make sense as tables in a database. Examples include currency aware money objects, date ranges and the like. So although the default thinking is to save an object as a table, no sane person would want a table of money values.
+	</P>
+	
+<P>An <I>Embedded Value</I> maps the values of an object to fields in the record of the object's owner. So in the sketch, we have an employment object with links to a date range object and a money object. In the resulting table the fields in those objects are mapped to fields in the employment table, rather than making new objects themselves. 
+	</P>
+
+
+<H2>How it Works</H2>
+	
+<P>Carrying out this exercise is actually quite simple. When the owning object (the employment)  is loaded or saved, the dependent objects (the date range and the money) are loaded and saved at the same time. The dependent classes won't have their own persistence methods, all persistence is done by the owner. 
+	</P>	
+
+
+<H2>When to Use it</H2>
+	
+<P>This is one of these patterns where the doing of it is very straightforward, but knowing when to use it becomes much more complicated.
+	</P>
+	
+<P>The simplest and straightforward cases for this are the clear simple <A href="valueObject.html" tppabs="http://martinfowler.com/isa/valueObject.html"><I>Value Object</I></A>s like money and date range. Since <A href="valueObject.html" tppabs="http://martinfowler.com/isa/valueObject.html"><I>Value Object</I></A>s don't have identity you can create and destroy these easily without worrying about such things as <A href="identityMap.html" tppabs="http://martinfowler.com/isa/identityMap.html"><I>Identity Map</I></A>s to keep them all in sync. Indeed all <A href="valueObject.html" tppabs="http://martinfowler.com/isa/valueObject.html"><I>Value Object</I></A>s should be persisted as <I>Embedded Value</I>, since there you'd never want a table for them.
+	</P>
+	
+	
+<P>The grey line comes on whether it's worth storing reference objects using <I>Embedded Value</I>, such as an order and shipping object. The principal question here is whether the shipping data has any relevance outside the context of the order. 	One issue is the loading and saving. If you only load the shipping data into memory when you load the order, then that's an argument for saving  both into the same table.  Another question is whether you'll want to access the shipping data separately though SQL. This can be an important issue if you are using reporting through SQL and aren't using a separate database for reporting.
+	</P>
+	
+<P>In most cases you'll only use <I>Embedded Value</I> on a reference object when the association between them is single valued at both ends (a one-to-one association). Occasionally you may use it if there are multiple candidate dependents if their number is small and fixed. Then you'll have numbered fields for each value. This is messy table design, and is horrible to query in SQL, but it may have performance benefits. Usually if this is the case, however, <A href="serializedLob.html" tppabs="http://martinfowler.com/isa/serializedLob.html"><I>Serialized LOB</I></A> is the better choice. 
+	</P>
+	
+<P>
+	Since so much of the logic for deciding when to use <I>Embedded Value</I> is the same as for <A href="serializedLob.html" tppabs="http://martinfowler.com/isa/serializedLob.html"><I>Serialized LOB</I></A>, there's the obvious matter of choosing between the two. The great advantage of <I>Embedded Value</I> is that it allows SQL queries to be made against the values in the dependent object. Although using XML as the serialization, together with XML based query add-ons to SQL may alter that in the future, at the moment you really need to use <I>Embedded Value</I> if you want to use dependent values in a query. This may be important for  separate reporting mechanisms on the database
+	</P>
+	
+<P>
+<I>Embedded Value</I> can only be used for fairly simple dependents. A solitary dependent, or a few separated dependents works well. <A href="serializedLob.html" tppabs="http://martinfowler.com/isa/serializedLob.html"><I>Serialized LOB</I></A> however works with more complex structures, including potentially large object sub-graphs.
+	</P>
+
+
+<H2>Further Reading</H2>
+	
+<P>
+<I>Embedded Value</I> has been called a couple of different names in its history. TOPLink refers to this pattern as <I>aggregate mapping</I>. Visual Age refers to this as <I>composer</I>.
+	</P>
+
+
+
+<H2>Example: Simple value object (Java)</H2>
+	
+<P>This is the classic example of a value object mapped with <I>Embedded Value</I>.  We'll begin with a simple product offering class with the following fields
+	</P>
+	
+<pre>class ProductOffering... 
+	private Product product;
+	private Money baseCost;
+	private Integer ID;
+</pre>	
+	
+<P>In these fields the ID is an <A href="identityField.html" tppabs="http://martinfowler.com/isa/identityField.html"><I>Identity Field</I></A>, and the product is a regular record mapping. We'll map the baseCost using <I>Embedded Value</I>. We'll do the overall mapping with <A href="activeRecord.html" tppabs="http://martinfowler.com/isa/activeRecord.html"><I>Active Record</I></A> to help keep things simple.
+	</P>
+	
+<P>Since we're using <A href="activeRecord.html" tppabs="http://martinfowler.com/isa/activeRecord.html"><I>Active Record</I></A> we need save and load routines. These routines are on the product offering class, since it's the owner. The money class has no persistence behavior at all. These routines are quite simple. Here is the load method.
+	</P>
+	
+<pre>class ProductOffering... 
+	public static ProductOffering load(ResultSet rs) {
+		try {
+			Integer id = (Integer) rs.getObject("ID");
+			BigDecimal baseCostAmount = rs.getBigDecimal("base_cost_amount");
+			Currency baseCostCurrency = Registry.getCurrency(rs.getString("base_cost_currency"));
+			Money baseCost = new Money(baseCostAmount, baseCostCurrency);
+			Integer productID = (Integer) rs.getObject("product");
+			Product product = Product.find((Integer) rs.getObject("product"));
+			return new ProductOffering(id, product, baseCost);
+		} catch (SQLException e) {
+			throw new ApplicationException(e);
+		}
+	}
+</pre>	
+	
+<P>Here's the update behavior. Again it's a simple variation on the updates.
+	</P>
+	
+<pre>class ProductOffering... 
+	public void update() {
+		PreparedStatement stmt = null;
+		try {
+			stmt = DB.prepare(updateStatementString);
+			stmt.setBigDecimal(1, baseCost.amount());
+			stmt.setString(2, baseCost.currency().code());
+			stmt.setInt(3, ID.intValue());
+			stmt.execute();
+		} catch (Exception e) {
+			throw new ApplicationException(e);
+		} finally {DB.cleanUp(stmt);}
+	}
+
+	private String updateStatementString =
+			"UPDATE product_offerings" +
+			"	SET base_cost_amount = ?, base_cost_currency = ? " +
+			"	WHERE id = ?";
+</pre>	
+	
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/"><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/"><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/">Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

@@ -1,0 +1,225 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Putting it all Together</title>
+</head>
+<body bgcolor="white">
+<table cellpadding="5" align="center">
+<tr>
+<td><a href="http://www.martinfowler.com/" ><img width="92" height="32" border="0" align="left" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></td>
+	<td><a href="http://martinfowler.com/" >Home</a></td>
+	<td><a href="http://martinfowler.com/articles.html" >Articles</a></td>
+	<td><a href="http://martinfowler.com/talks.html" >Talks</a></td>
+	<td><a href="http://martinfowler.com/links.html" >Links</a></td>
+	<td><a href="http://martinfowler.com/index.html#contactInfo" >Contact Me</a></td>
+	<td><a href="index.html" tppabs="http://martinfowler.com/isa/index.html">ISA</a></td>
+	<td><a href="http://www.thoughtworks.com/" >ThoughtWorks</a></td>
+
+</tr>
+</table>
+
+<HR>
+<H1 align="center">Putting it all Together</H1>
+<HR>
+
+<P>So far these narratives have looked at one aspect of a system and explored the various options that you can use in handling these issues. Now it's time to sweep all of these issues together and start to answer the tricky question of what patterns you should use together when designing an enterprise application.
+</P>
+
+<P>The advice in this chapter is in many ways a repeat of the advice given in the earlier narrative chapters. I must admit I've had prevarications on whether this chapter was needed, but I felt it was good to put all the discussion in context, now that I hope you have at least an outline of the full scope of the patterns in this book.
+</P>
+
+<P>As I write this, I'm very conscious of the limitations of my advice. Frodo said of the elves "go not to the Elves for counsel, for they will say both no and yes". While I'm not claiming any immortal knowledge I certainly understand their answer that advice is often a dangerous gift. If you're reading this to make architectural decisions for your project, you know far more about the issues of your project than I do. One of the biggest frustrations in being a pundit is that people will often come up to me at a conference, or in an email message, and ask for advice on their architectural or process decisions. There's no way you can give particular advice on the basis of a five minute description. I write this chapter with even less knowledge of your predicament. 
+</P>
+
+<P>So read this chapter in the spirit that it's given. I don't know all the answers, and I certainly don't know your questions. Use this advice to prod your thinking, but don't use it as a replacement for your thinking. In the end you have to make, and live with, the decisions yourself.
+</P>
+
+<P>But one good thing is that your decisions are not cast forever in stone. Architectural refactoring is hard, and we are still ignorant of its full costs. But it isn't impossible. Here the best advice I can give is that even if you dislike the full story of <a href="">extreme programming</a>, you should still consider seriously three technical practices: continuous integration, test driven development, and refactoring. These will not be a panacea, but they will make it much easier to change your mind when you discover you need to. And you will need to, unless you are either more fortunate, or more skillful, than anyone I've met to date.
+</P>
+
+<a name="N1A"></a>
+
+<H2>Starting With the Domain Layer</H2>
+	
+<P>The start of the process is deciding which domain logic approach to go with. The three main contenders are: <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>, <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A>, and <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. 
+	</P>
+	
+<P>As I've indicated in <A href="domainLogic.html#top" tppabs="http://martinfowler.com/isa/domainLogic.html#top">that chapter</A>, the strongest force that drives you through this trio is the complexity of the domain logic, and this is something that is currently impossible to quantify, or even qualify with any degree of reasonable precision. But other factors also play in the decision, in particular the difficulty of the connection with a database.
+	</P>
+	
+<P>The simplest of the three is <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>. It fits with the procedural model that most people are still most comfortable with. It nicely encapsulates the logic of each system transaction into a comprehensible script. It's easy to build on top of a relational database. It's great failing is the fact that it doesn't deal well with complex business logic, being particularly susceptible to duplicate code. If you have a simple catalog application with little more than a shopping cart running off a simple pricing structure, then <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> will fill the bill perfectly, but as your logic gets more complicated then your difficulties multiply exponentially.
+	</P>
+	
+<P>At the other end of the scale is the <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. Hard core object bigots like myself will have an application no other way. After all if an application is simple enough to write with <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s, why should our immense intellects bother with such an unworthy problem? And my experiences lead me to have no doubt that with really complex domain logic, there's nothing can handle this hell better than a rich <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. Once you get used to working with a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> even simple problems can be tackled with ease.
+	</P>
+	
+<P>Yet the <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> carries its faults. High on the list is the difficulty of learning them. Object bigots often look down their noses at people who just don't get objects. But the consequence is that a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> requires skill if it's to be done well. Done poorly it's quite a disaster. The second big difficulty of a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> is the connection to a relational database. Of course a real object zealot finesses this problem with the subtle flick of an object database. But for many, mostly non-technical, reasons an object database isn't a possible choice for enterprise applications. The result is the messy connection to a relational database. Let's face it, object models and relational models don't fit well together. The complexity of many of the OR mapping patterns I describe is the result.
+	</P>
+	
+<P>
+<A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> represents an attractive middle ground between these poles. It can handle domain logic better than <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s, and while it can't touch a real <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> on handling complex domain logic it fits in really well with a relational database - and many other things too. If you have an environment, such as .NET, where many tools orbit around the all-seeing <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A> then <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> works very nicely. It plays to the strengths of the relational database and yet represents a reasonable factoring of the domain logic. 
+	</P>
+	
+<P>In this argument we see that the tools you have also affect your architecture. Sometimes you're able to choose the tools based on the architecture - and in theory that's the way you should go. But in practice you often have to fit your architecture to match your tools. Of the three <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> is the one whose star rises most when you have tools that match it. It's a particularly strong choice for .NET environments, since so much of the platform is geared around <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A>.
+	</P>
+	
+<P>If you've read the discussion in the domain logic chapter, much of this will seem familiar. Yet I think it was worth repeating here because I really do think this is the central decision. From here we go downwards to the database layer, but now the decisions are shaped by the context of your domain layer choice.  
+	</P>
+	
+
+<a name="N75"></a>
+
+<H2>Down to the Data Source</H2>
+	
+<P>Once you've chose your domain layer, you now have to figure out how to connect it to your data sources. Your decisions are based on your domain layer choice, so I'll tackle this in separate sections, driven by the your choice of domain layer.
+	</P>
+	
+<a name="N7D"></a>
+	
+<H3>
+<A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>
+</H3>
+		
+<P>The simplest <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s contain their own database logic, but I prefer to avoid doing that even in the simplest cases. Separating the database out separates two parts that make sense separate, so even in the simplest applications I make the separation. The database patterns to choose from here are <A href="rowDataGateway.html" tppabs="http://martinfowler.com/isa/rowDataGateway.html"><I>Row Data Gateway</I></A> and <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html"><I>Table Data Gateway</I></A>. 
+		</P>
+		
+<P>The choice between them depends much on the facilities of your implementation platform, and on where you expect the application to go in the future. Using a <A href="rowDataGateway.html" tppabs="http://martinfowler.com/isa/rowDataGateway.html"><I>Row Data Gateway</I></A> gives you a nicely explicit interface for dealing with the data, as each record is read into an object with a clear and explicit interface. With <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html"><I>Table Data Gateway</I></A> you may have less code to write, since you don't need all the accessor code to get at the data, but you end up with a much more implicit interface that relies on accessing a record set structure that's little more than a glorified map. 
+		</P>
+		
+<P>The key decision, however, lies in the rest of your platform. If you have a platform that provides a lot of tools that work well with <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A>, particularly UI tools or transactional disconnected record sets, then that would tilt me decisively in the direction of a <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html"><I>Table Data Gateway</I></A>
+		
+</P>
+		
+<P>You usually don't need any of the other OR mapping patterns in this context. All the structural mapping issues are pretty much absent since the in-memory structure maps to the database structure so well. You might consider a <A href="unitOfWork.html" tppabs="http://martinfowler.com/isa/unitOfWork.html"><I>Unit of Work</I></A>, but usually it's easy to keep track of what's changed in the script. You don't need to worry about most concurrency issues because the script often corresponds almost exactly to a system transaction, so you can just wrap the whole script in a single transaction. The common exception is where one request pulls data back for editing and the next request tries to save the changes. In this case <A href="optimistic.html" tppabs="http://martinfowler.com/isa/optimistic.html"><I>Optimistic Offline Lock</I></A> is almost always the best choice. Not just is it easier to implement, it also usually fits users expectations and avoids the problem of a hanging session leaving all sorts of things locked. 
+		</P>		
+	
+	
+<a name="NAB"></a>
+	
+<H3>
+<A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A>
+</H3>
+		
+<P>The main reason to choose <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> is the presence of a good <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A> framework. In this case you'll want a database mapping pattern that works well with <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A>s, so that leads you inexorably towards <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html"><I>Table Data Gateway</I></A>. These two patterns fit naturally together as if they were made in heaven for each other. 
+		</P>
+		
+<P>There's not really anything else you need to add on the data source side with this pattern. In the best cases the <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A> has some kind of concurrency control mechanism built in, which effectively turns it into a <A href="unitOfWork.html" tppabs="http://martinfowler.com/isa/unitOfWork.html"><I>Unit of Work</I></A>, which further reduces hair loss.
+		</P>		
+	
+	
+<a name="NCA"></a>
+	
+<H3>
+<A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>
+</H3>
+		
+<P>Now things get interesting. In many ways the big weakness of <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> is the fact that connection to the database is complicated. The degree of complication depends upon the complexity of the <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. 
+		</P>
+		
+<P>If your <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> is fairly simple, say a couple of dozen classes which are pretty close to the database, then an <A href="activeRecord.html" tppabs="http://martinfowler.com/isa/activeRecord.html"><I>Active Record</I></A> makes sense. If you want to decouple things a bit you can use either <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html"><I>Table Data Gateway</I></A> or <A href="rowDataGateway.html" tppabs="http://martinfowler.com/isa/rowDataGateway.html"><I>Row Data Gateway</I></A> to do that. Whether you separate or not is not a huge deal either way. 
+		</P>
+		
+<P>As things get more complicated, then you'll need to consider <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A>. <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A> is really the approach that delivers on the promise of keeping your <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> as independent as possible of all the other layers. But <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A> is also the most complicated one to implement. Unless you either have a strong team, or you can find some simplifications that make the mapping easier to do, I'd strongly suggest getting a tool to handle the mapping.
+		</P>
+		
+<P>Once you choose <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A> then most of the patterns in the OR mapping section come into play. In particular I heartily recommend using <A href="unitOfWork.html" tppabs="http://martinfowler.com/isa/unitOfWork.html"><I>Unit of Work</I></A>, which does a great deal to act as a focal point for concurrency control.
+		</P>
+	
+	
+<a name="N101"></a>
+	
+<H3>Up to the Presentation</H3>
+		
+<P>In many ways the presentation is relatively independent of the choice of the lower layers. Your first question is whether to provide a rich client interface or a HTML browser interface. A rich client will give you a nicer UI, but you then have to have a certain amount of control and deployment of your clients. My preference is to pick an HTML browser if you can get away with it, and a rich client if that's not possible. A rich client will usually be more effort to program, but that's usually because rich clients tend to be more sophisticated, not so much the inherent complexities of the technology.
+		</P>
+		
+<P>I haven't explored any rich client patterns in this book, so if you choose rich client I don't really have anything further to say.
+		</P>
+		
+<P>If you go the HTML route then you have to decide how to structure your application. I certainly recommend the <A href="mvc.html" tppabs="http://martinfowler.com/isa/mvc.html"><I>Model View Controller</I></A> as the underpinning for your design. That done, you are left with two decisions, one for the controller and one for the view.
+		</P>
+		
+<P>Your tooling may well make your choice for you. If you use Visual Studio, then the easiest way to go is <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A> and <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html" ><I>Template View</I></A>. If you use Java, then you have a choice of web frameworks to consider. A popular choice at the moment is Struts, that will lead you to a <A href="frontController.html" tppabs="http://martinfowler.com/isa/frontController.html"><I>Front Controller</I></A> and <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html" ><I>Template View</I></A>.
+		</P>
+		
+<P>Given a freer choice, I'd recommend <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A> if your site is more document-oriented, particularly if you have a mix of static and dynamic pages. More complex navigation and UI leads you towards a <A href="frontController.html" tppabs="http://martinfowler.com/isa/frontController.html"><I>Front Controller</I></A>
+		
+</P>
+		
+<P>On the view front, the choice between <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html" ><I>Template View</I></A> and <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A> really depends on whether your team prefers to use server pages or XSLT in your programming. <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html" ><I>Template View</I></A>s have the edge at the moment, although I rather like the added testability of <A href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html"><I>Transform View</I></A>. If you have the need to display a common site with multiple look and feels you should consider <A href="htmlRenderer.html" tppabs="http://martinfowler.com/isa/htmlRenderer.html"><I>Two Step View</I></A>
+		
+</P>
+		
+<P>How you communicate with the lower layers depends on what kind of layers they are, and whether they are always going to be in the same process. My preference is to have everything all run in one process if you can, that way you don't have to worry about slow inter-process calls. If you can't do that then you should wrap your domain layer with <A href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html"><I>Remote Facade</I></A> and use <A href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html"><I>Data Transfer Object</I></A> to communicate to the web server. There's also an argument for using <A href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html"><I>Remote Facade</I></A>s within a single process if you have a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> as the <A href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html"><I>Remote Facade</I></A> can help hide the complexities of the <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> from view. That choice really depends on how comfortable you are working with the <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> directly, adding a <A href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html"><I>Remote Facade</I></A> can add a lot of extra coding.
+		</P>
+	
+
+
+<a name="N159"></a>
+
+<H2>Some Technology Specific Advice</H2>
+	
+<P>In most of this book I'm trying to bring out the common experience of doing projects in many different platforms. Experience with Forte, CORBA, and Smalltalk translates very effectively into developing with Java and .NET. The only reason I've concentrated on Java and .NET environments in this book is because they look like they will be the most common platforms for enterprise application development in the future. (Although I'd like to see the dynamically typed scripting languages, in particular Python and Ruby, give them a run for their money.)
+	</P>
+	
+<P>So in this section I want to apply the above advice to these two platforms. As soon as I do this I'm danger of dating my advice. Technologies change much more rapidly than these patterns. So as you read this, remember I'm writing this in early 2002 when everyone is saying that economic recovery is just around the corner.
+	</P>
+	
+<a name="N164"></a>
+	
+<H3>Java and J2EE</H3>
+		
+<P>As I write this the big debate in the Java world is exactly how valuable is Enterprise Java Beans? The EJB spec has finally appeared and tools are coming out. But  you don't <I>need</I> EJB to build a good J2EE application, despite what EJB vendors tell you. You can do a great deal with POJOs (Plain Old Java Objects) and JDBC
+		</P>
+		
+<P>The design alternatives for J2EE vary on what kind of patterns you are using, and again they break out driven by the domain logic. 
+		</P>
+		
+<P>If you use <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> on top of some form of <A href="gateway.html" tppabs="http://martinfowler.com/isa/gateway.html"><I>Gateway</I></A>, then with EJB the common approach at the moment is to use session beans as <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> and entity beans as <A href="rowDataGateway.html" tppabs="http://martinfowler.com/isa/rowDataGateway.html"><I>Row Data Gateway</I></A>. This is a pretty reasonable architecture if your domain logic is sufficiently modest to only need <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s. The problem with this strongly beany approach is that it's hard to get rid of the EJB server if you find you don't need it and you don't want to cough up the license fees. The non EJB approach is a POJO for the <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> on top of either a <A href="rowDataGateway.html" tppabs="http://martinfowler.com/isa/rowDataGateway.html"><I>Row Data Gateway</I></A> or a <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html"><I>Table Data Gateway</I></A>. If JDBC 2.0 row sets get more accepted, then that's a reason to use them as <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A>s and that leads to a <A href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html"><I>Table Data Gateway</I></A>. If you're not sure about EJB you can use the non EJB approach and wrap them with session beans acting as <A href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html"><I>Remote Facade</I></A>s.
+		</P>
+		
+<P>If you are using a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> then the current orthodoxy is to use entity beans as your <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>. If your <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> is pretty simple and matches your database well, then that makes reasonable sense and your entity beans will then be <A href="activeRecord.html" tppabs="http://martinfowler.com/isa/activeRecord.html"><I>Active Record</I></A>s. It's still good practice to wrap you entity beans with session beans acting as <A href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html"><I>Remote Facade</I></A>s. However if you <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> is more complex, then I would want the <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> to be entirely independent of the EJB structure, so that you can write, run, and test your domain logic without having to deal with the vagaries of the EJB container. In that model I would use POJOs for the <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> and wrap them with session beans acting as <A href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html"><I>Remote Facade</I></A>s. If you choose not to use EJB I would run the whole app in the web server and avoid any remote calls between presentation and domain. If you're using POJO <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> I'd also use POJOs for the <A href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html"><I>Data Mapper</I></A>s - either using an OR mapping tool or rolling something myself if I felt really up to it. 
+		</P>
+		
+<P>At the moment, the <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> isn't terribly common in the Java world. It'll be interesting to see if more tooling surrounds the JDBC row set - if it does it could become a viable approach. In this case the POJO approach fits best, although you can also wrap the <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> with session beans acting as <A href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html"><I>Remote Facade</I></A>s and returning <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A>s.
+		</P>		
+	
+	
+<a name="N1CA"></a>
+	
+<H3>.NET</H3>
+		
+<P>Looking at .NET, Visual Studio, and the history of application development in the Microsoft world, the dominant pattern in <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A>. Although object bigots tend to dismiss this as just meaning that Microsofties don't get objects, the <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> does present a valuable compromise between <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> and <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>, with an impressive set of tools that take advantage of the ubiquitous data set acting as a <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A>
+		
+</P>
+		
+<P>As a result the <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> has to be the default choice for this platform. Indeed I see no point at all in using <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A>s except in the very simplest of cases, and even then they should act on and return data sets.
+		</P>
+		
+<P>This doesn't mean that you can't use <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>, indeed you can build a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A> just as easily in .NET as you can in any other OO environment. But the tools don't give you the extra help that they do for <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A>s, so I'd tolerate more complexity before I felt the need to shift to a <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>.
+		</P>
+		
+<P>The current hype in .NET is all about web services, but I would not use web services inside an application, I'd use it, as in Java, as a presentation to allow applications to integrate. There's no real reason to separate the web server and domain logic into separate processes in a .NET application, so <A href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html"><I>Remote Facade</I></A> is less useful within the application.
+		</P>		
+	
+	
+<a name="N200"></a>
+	
+<H3>Web Services</H3>
+		
+<P>As I write this, the general consensus amongst pundits is that web services will make reuse a reality and drive system integrators out of business. I'm not holding my breath for either of those. Within these patterns web services don't play a huge role because they are about application integration rather how you build a simple application. You shouldn't try to break a single application up into web services talking to each other unless you really need to. Rather build your application and expose various parts of it as web services treating the web services as <A href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html"><I>Remote Facade</I></A>s. Above all don't let all the buzz about how easy it is to build web services let you forget about the <A href="distributionStrategies.html#first-rule" tppabs="http://martinfowler.com/isa/distributionStrategies.html#first-rule">First Rule of Distributed Object Design</A>.
+		</P>
+	
+
+
+
+<HR>
+<table width="100%">
+<TR>
+<TD align="left"><a href="http://www.martinfowler.com/" ><img width="147" height="51" border="0" src="mflogo.gif" tppabs="http://martinfowler.com/isa/mflogo.gif"></a></TD><TD align="right"><a href="http://www.thoughtworks.com/" ><img border="0" src="twlogo.gif" tppabs="http://martinfowler.com/isa/twlogo.gif"></a></TD>
+</TR>
+</table>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/" >Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>

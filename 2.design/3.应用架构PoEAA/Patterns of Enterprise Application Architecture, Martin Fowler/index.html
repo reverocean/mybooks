@@ -1,0 +1,160 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Patterns of Enterprise Application Architecture </title>
+</head>
+<body bgcolor="white">
+<HR>
+<H1 align="center">Patterns of Enterprise Application Architecture </H1>
+<HR>
+<P>(formerly known as Information System Architecture)
+</P>
+<UL>
+<LI>
+<a href="#N7D">Background</a>
+</LI>
+<LI>
+<a href="#NA1">The Content</a>
+</LI>
+<LI>
+<a href="#NA8">Why the rename?</a>
+</LI>
+<LI>
+<a href="#NAD">Revision History</a>
+</LI>
+</UL>
+	Last Significant Update: <a href="#version-list">June 2002</a><a name="N7D"></a>
+<H2>Background</H2>
+<P>One of the recurring themes of my career is how to structure sophisticated enterprise applications, particularly those that operate across multiple processing tiers. It's a subject I discussed briefly in a chapter in Analysis Patterns, and one that I looked at in more depth in many consulting engagements. In the last few years I've been doing a lot of work with Enterprise Java: but there's no surprise that many of the ideas and patterns involved are exactly the same as those that I've run into earlier with CORBA, DCE, and Smalltalk based systems.
+	</P>
+<P>This notion of common lessons has been amplified by my collaborations with developers at ThoughtWorks. A lot of old time developers at ThoughtWorks did a lot of work with Forte - which was a sophisticated distributed environment. Others have background in CORBA and DCOM.Again we see common lessons and patterns that are relevant whatever the technological platform.
+	</P>
+<P>So I decided to take advantage of this knowledge to capture and write down some of these ideas. Most of the writing here is mine, but the ideas come from many ThoughtWorkers, although Dave Rice and Matt Foemmel have contributed a particularly large amount of information. This material is the content of my next book: <B><a href="http://www.amazon.com/exec/obidos/ASIN/0321127420" >Patterns of Enterprise Application Architecture</a></B>, which is due to appear at <a href="http://oopsla.org/" >OOPSLA 2002</a>.
+	</P>
+<P>As I've been writing this book, I've been putting information on these web pages, both to give readers an idea of what I'm working on, and to solicit feedback on the evolving book. In June 2002 I sent my final draft to Addison-Wesley and it  was "released to production". That means the hard intellectual work is done, we are now in the process of copy editing, book design, indexing, and the other tasks of production - most of which is handled by Addison-Wesley.
+	</P>
+<P>AW have graciously allowed me to keep these pages up until the book is released in November. Most of the text here corresponds to the second draft that was sent out for review in April, not the final draft for the book. (It seems that if you write a book and make it available on the web, people complain that the book is only a copy of the free web pages!) So the final pages will be much neater in the book itself. However we decided to include in this version some of the newer material on offline concurrency - most of which was contributed by my colleague David Rice. The book will include code examples for the offline concurrency patterns. David has played a big part in putting together this section and he has turned into a significant contributor - contributing about 10% of the book.
+	</P>
+<P>The final book will also include two further guest pattern descriptions: 
+	</P>
+<UL>
+<LI style="">
+<I>Repository</I> by Edward Hieatt and Robert Mee</LI>
+<LI style="">
+<I>Service Layer</I> by Randy Stafford</LI>
+</UL>
+<P>When the book appears in print I'll bring up a new site with abbreviated versions of the patterns, similar to the way I did for the refactoring book. I haven't yet decided how that will be done, but I will certainly change the URLs at that point.
+	</P>
+<P>Thanks to the many of you that have given me comments on the book as it was in the works. Keep your eyes open for my next writing projects, whatever they turn out to be.
+	</P>
+<a name="NA1"></a>
+<H2>The Content</H2>
+<P>The book is organized in two parts. The first part is a set of narrative chapters that can be read from start to finish. In the preliminary book designs these come to around 100 pages. The second part is a reference section of the patterns themselves. The idea is that the chapters discuss the general issues and summarize the patterns that are relevant - then the patterns chapters capture the detail.
+</P>
+<UL>
+<LI>
+<a href="preface.html" tppabs="http://martinfowler.com/isa/preface.html">Preface</a>
+</LI>
+<LI>
+<a href="introduction.html" tppabs="http://martinfowler.com/isa/introduction.html">Introduction</a>
+</LI>
+<LI>
+<B>Narrative Chapters</B>
+</LI>
+<UL>
+<LI>
+<a href="layers.html" tppabs="http://martinfowler.com/isa/layers.html">Layering</a>
+</LI>
+<LI>
+<a href="domainLogic.html" tppabs="http://martinfowler.com/isa/domainLogic.html">Organizing Domain Logic</a>
+</LI>
+<LI>
+<a href="webServer.html" tppabs="http://martinfowler.com/isa/webServer.html">Web Presentation</a>
+</LI>
+<LI>
+<a href="OR-mapping.html" tppabs="http://martinfowler.com/isa/OR-mapping.html">Mapping to a Relational Database
+</a>
+</LI>
+<LI>
+<a href="concurrency.html" tppabs="http://martinfowler.com/isa/concurrency.html">Concurrency</a>
+</LI>
+<LI>
+<a href="distributionStrategies.html" tppabs="http://martinfowler.com/isa/distributionStrategies.html">Distribution Strategies
+</a>
+</LI>
+<LI>
+<a href="together.html" tppabs="http://martinfowler.com/isa/together.html">Putting it all Together</a>
+</LI>
+</UL>
+<LI>
+<B>Patterns Chapters</B>
+</LI>
+<UL>
+<LI>Domain Layer Patterns</LI>
+<a href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html">Transaction Script</a>, <a href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html">Domain Model</a>, <a href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html">Table Module</a>
+<LI>Web Server Patterns</LI>
+<a href="mvc.html" tppabs="http://martinfowler.com/isa/mvc.html">Model View Controller</a>, <a href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html">Page Controller</a>, <a href="frontController.html" tppabs="http://martinfowler.com/isa/frontController.html">Front Controller</a>, <a href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html" >Template View</a>, <a href="transformView.html" tppabs="http://martinfowler.com/isa/transformView.html">Transform View</a>, <a href="htmlRenderer.html" tppabs="http://martinfowler.com/isa/htmlRenderer.html">Two Step View</a>, <a href="applicationController.html" tppabs="http://martinfowler.com/isa/applicationController.html">Application Controller</a>
+<LI>Object / Relational Mapping Patterns</LI>
+<a href="activeRecord.html" tppabs="http://martinfowler.com/isa/activeRecord.html">Active Record</a>, <a href="rowDataGateway.html" tppabs="http://martinfowler.com/isa/rowDataGateway.html">Row Data Gateway</a>, <a href="tableDataGateway.html" tppabs="http://martinfowler.com/isa/tableDataGateway.html">Table Data Gateway</a>, <a href="databaseMapper.html" tppabs="http://martinfowler.com/isa/databaseMapper.html">Data Mapper</a>, <a href="metadataMapping.html" tppabs="http://martinfowler.com/isa/metadataMapping.html">Metadata Mapping</a>, <a href="identityMap.html" tppabs="http://martinfowler.com/isa/identityMap.html">Identity Map</a>, <a href="identityField.html" tppabs="http://martinfowler.com/isa/identityField.html">Identity Field</a>, <a href="serializedLob.html" tppabs="http://martinfowler.com/isa/serializedLob.html">Serialized LOB</a>, <a href="foreignKeyMapping.html" tppabs="http://martinfowler.com/isa/foreignKeyMapping.html">Foreign Key Mapping</a>, <a href="dependentObject.html" tppabs="http://martinfowler.com/isa/dependentObject.html">Dependent Mapping</a>, <a href="associationTableMapping.html" tppabs="http://martinfowler.com/isa/associationTableMapping.html">Association Table Mapping</a>, <a href="aggregateMapping.html" tppabs="http://martinfowler.com/isa/aggregateMapping.html">Embedded Value</a>, <a href="virtualProxy.html" tppabs="http://martinfowler.com/isa/virtualProxy.html">Lazy Load</a>, <a href="leafTableInheritance.html" tppabs="http://martinfowler.com/isa/leafTableInheritance.html">Concrete Table Inheritance</a>, <a href="singleTableInheritance.html" tppabs="http://martinfowler.com/isa/singleTableInheritance.html">Single Table Inheritance</a>, <a href="classTableInheritance.html" tppabs="http://martinfowler.com/isa/classTableInheritance.html">Class Table Inheritance</a>, <a href="inheritanceMappers.html" tppabs="http://martinfowler.com/isa/inheritanceMappers.html">Inheritance Mappers</a>, <a href="queryObject.html" tppabs="http://martinfowler.com/isa/queryObject.html">Query Object</a>
+<LI>Concurrency Patterns</LI>
+<a href="unitOfWork.html" tppabs="http://martinfowler.com/isa/unitOfWork.html">Unit of Work</a>, <a href="optimistic.html" tppabs="http://martinfowler.com/isa/optimistic.html">Optimistic Offline Lock</a>, <a href="pessimistic.html" tppabs="http://martinfowler.com/isa/pessimistic.html">Pessimistic Offline Lock</a>, <a href="implicitLocking.html" tppabs="http://martinfowler.com/isa/implicitLocking.html">Implicit Lock</a>, <a href="coarseGrainedLock.html" tppabs="http://martinfowler.com/isa/coarseGrainedLock.html" >Coarse-Grained Lock</a>, <a href="clientSessionState.html" tppabs="http://martinfowler.com/isa/clientSessionState.html" >Client Session State</a>, <a href="databaseSessionState.html" tppabs="http://martinfowler.com/isa/databaseSessionState.html">Database Session State</a>, <a href="statefulSession.html" tppabs="http://martinfowler.com/isa/statefulSession.html">Server Session State</a>
+<LI>Distribution Patterns</LI>
+<a href="distributedFacade.html" tppabs="http://martinfowler.com/isa/distributedFacade.html">Remote Facade</a>, <a href="dataTransferObject.html" tppabs="http://martinfowler.com/isa/dataTransferObject.html">Data Transfer Object</a>
+<LI>Base Patterns</LI>
+<a href="gateway.html" tppabs="http://martinfowler.com/isa/gateway.html">Gateway</a>, <a href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" >Record Set</a>, <a href="valueObject.html" tppabs="http://martinfowler.com/isa/valueObject.html" >Value Object</a>, <a href="money.html" tppabs="http://martinfowler.com/isa/money.html" >Money</a>, <a href="plugins.html" tppabs="http://martinfowler.com/isa/plugins.html" >Plugin</a>, <a href="serviceStub.html" tppabs="http://martinfowler.com/isa/serviceStub.html" >Service Stub</a>, <a href="layerSupertype.html" tppabs="http://martinfowler.com/isa/layerSupertype.html" >Layer Supertype</a>, <a href="specialCase.html" tppabs="http://martinfowler.com/isa/specialCase.html" >Special Case</a>, <a href="registry.html" tppabs="http://martinfowler.com/isa/registry.html" >Registry</a>
+</UL>
+</UL>
+<a name="NA8"></a>
+<H2>Why the rename?</H2>
+<P>As I've been working on this during 2001 I was doing it under the title of "Information Systems Architecture". As we were working on the book proposal for Addison-Wesley, the marketing folks there said that "information systems" was a rather old fashioned term, so instead we chose the term "enterprise application". (I have no qualms about selling out, providing the price is right.)
+	</P>
+<a name="NAD"></a>
+<H2>Revision History</H2>
+<a name="version-list"></a>
+<P>Here's a list of the major updates to this paper
+	<UL>
+<LI>
+<I>June 2002: </I>
+	Updated the pattern names to match the final draft and included updates to the offline concurrency material from the final draft: this includes the <a href="concurrency.html" tppabs="http://martinfowler.com/isa/concurrency.html">concurrency narrative</a> and the patterns <A href="optimistic.html" tppabs="http://martinfowler.com/isa/optimistic.html"><I>Optimistic Offline Lock</I></A>, <A href="pessimistic.html" tppabs="http://martinfowler.com/isa/pessimistic.html"><I>Pessimistic Offline Lock</I></A>, <A href="coarseGrainedLock.html" tppabs="http://martinfowler.com/isa/coarseGrainedLock.html" ><I>Coarse-Grained Lock</I></A>, and <A href="implicitLocking.html" tppabs="http://martinfowler.com/isa/implicitLocking.html"><I>Implicit Lock</I></A>.
+</LI>
+<LI>
+<I>April 2002: </I>
+	More work on preparing for the second draft. I've added <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A> and made lots of minor changes. I gave a particular washing to the domain logic chapter.
+</LI>
+<LI>
+<I>Mar 27 2002: </I>
+	A second update this month, again prompted by changes due to the official review comments. I've added a new chapter on putting the patterns together and added patterns for <A href="metadataMapping.html" tppabs="http://martinfowler.com/isa/metadataMapping.html"><I>Metadata Mapping</I></A>, <A href="queryObject.html" tppabs="http://martinfowler.com/isa/queryObject.html"><I>Query Object</I></A> and <A href="recordSet.html" tppabs="http://martinfowler.com/isa/recordSet.html" ><I>Record Set</I></A>
+</LI>
+<LI>
+<I>Mar 2002: </I>
+	My official reviewers, as usual, gave me a lot to chew on. This version reflects much of this mastication. The various aspects touching on business vs systems transactions have all been rolled into a general chapter on concurrency. I've split database gateway into separate patterns for its two main forms, and I've hunted down some stupid coding styles that would hurt multi-threading. I've also added a .NET example for <A href="actionController.html" tppabs="http://martinfowler.com/isa/actionController.html"><I>Page Controller</I></A> and <A href="serverPage.html" tppabs="http://martinfowler.com/isa/serverPage.html" ><I>Template View</I></A> and added the <A href="money.html" tppabs="http://martinfowler.com/isa/money.html" ><I>Money</I></A> pattern. This isn't quite the second draft yet, as I've still got more comments to work on.
+</LI>
+<LI>
+<I>Jan 2002: </I>I added an introduction and updated some examples on the web server patterns. Dave added both a chapter and patterns on concurrency. We renamed the material to Enterprise Application Architecture. This revision is the first draft of the book and corresponds to the copy sent out for technical review.
+</LI>
+<LI>
+<I>Nov 2001: </I>I did a general walk-through of many of the patterns tidying up on examples and sketches. I broke apart <A href="identityField.html" tppabs="http://martinfowler.com/isa/identityField.html"><I>Identity Field</I></A> into several patterns, including <A href="foreignKeyMapping.html" tppabs="http://martinfowler.com/isa/foreignKeyMapping.html"><I>Foreign Key Mapping</I></A>, <A href="dependentObject.html" tppabs="http://martinfowler.com/isa/dependentObject.html"><I>Dependent Mapping</I></A> and <A href="associationTableMapping.html" tppabs="http://martinfowler.com/isa/associationTableMapping.html"><I>Association Table Mapping</I></A>. Added content and examples for <A href="registry.html" tppabs="http://martinfowler.com/isa/registry.html" ><I>Registry</I></A>, and <A href="specialCase.html" tppabs="http://martinfowler.com/isa/specialCase.html" ><I>Special Case</I></A>. Dave Rice added <A href="serviceStub.html" tppabs="http://martinfowler.com/isa/serviceStub.html" ><I>Service Stub</I></A>
+</LI>
+<LI>
+<I>Oct 2001: </I>Added write-ups for the inheritance OR Mappings. Dave Rice and Matt Foemmel added <A href="plugins.html" tppabs="http://martinfowler.com/isa/plugins.html" ><I>Plugin</I></A>. Added example for <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A>. Many of these new examples use C#.</LI>
+<LI>
+<I>Sep 2001: </I>Dave Rice added a code example for <A href="unitOfWork.html" tppabs="http://martinfowler.com/isa/unitOfWork.html"><I>Unit of Work</I></A>. I re-did the discussion of views in web servers, renamed distributed facade to session facade, added <A href="tableModule.html" tppabs="http://martinfowler.com/isa/tableModule.html"><I>Table Module</I></A> and did more rejigging of the layering section.</LI>
+<LI>
+<I>August 2001: </I>Rewrote narratives on layers and O/R mapping. Added code example for <A href="gateway.html" tppabs="http://martinfowler.com/isa/gateway.html"><I>Gateway</I></A>
+</LI>
+<LI>
+<I>July 2001: </I>Major update to web server patterns. Added <A href="virtualProxy.html" tppabs="http://martinfowler.com/isa/virtualProxy.html"><I>Lazy Load</I></A>
+</LI>
+<LI>
+<I>May 2001: </I>Updated and added code samples to <A href="transactionScript.html" tppabs="http://martinfowler.com/isa/transactionScript.html"><I>Transaction Script</I></A> and <A href="domainModel.html" tppabs="http://martinfowler.com/isa/domainModel.html"><I>Domain Model</I></A>
+</LI>
+<LI>
+<I>April 2001: </I>Updated most of the O/R mapping patterns. Added code examples to most of them</LI>
+<LI>
+<I>March 2001: </I>Initial Upload</LI>
+</UL>
+</P>
+<HR>
+	&copy; <small>Copyright <a href="http://www.martinfowler.com/" >Martin Fowler</a>, all rights reserved</small>
+</body>
+</html>
